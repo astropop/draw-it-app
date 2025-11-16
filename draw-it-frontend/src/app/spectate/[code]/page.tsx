@@ -1,4 +1,4 @@
-// app/spectate/[code]/page.tsx
+// Spectate
 
 import { getMockGameByCode } from "@/app/mock/mockdata.unified";
 import GameSpectator from "@/app/ui/components/GameSpectator";
@@ -35,22 +35,6 @@ export default async function SpectatePage({
 }) {
   const { code } = await params;
   const gameData = await getGameData(code);
-  // let gameData;
-  // const { code } = await params;
-  // switch (code) {
-  //   case "1":
-  //     gameData = mockGameWaiting;
-  //     break;
-  //   case "2":
-  //     gameData = mockGameInProgress;
-  //     break;
-  //   case "3":
-  //     gameData = mockGameFinished;
-  //     break;
-  //   default:
-  //     gameData = mockGameWaiting;
-  //     break;
-  // }
 
   return <GameSpectator initialData={gameData} />;
 }

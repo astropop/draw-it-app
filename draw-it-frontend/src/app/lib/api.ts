@@ -50,7 +50,7 @@ export const gameApi = {
       });
     }
 
-    return fetchApi<GameResponseDTO>("/api/games/create", {
+    return await fetchApi<GameResponseDTO>("/api/games/create", {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -64,7 +64,7 @@ export const gameApi = {
         resolve(mockApiResponses.joinGame(data));
       });
     }
-    return fetchApi("/api/games/join", {
+    return await fetchApi("/api/games/join", {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -79,7 +79,7 @@ export const gameApi = {
       });
     }
 
-    return fetchApi(`/api/games/${gameCode}/start`, {
+    return await fetchApi(`/api/games/${gameCode}/start`, {
       method: "POST",
     });
   },
@@ -95,7 +95,7 @@ export const gameApi = {
       });
     }
 
-    return fetchApi("/api/games/submit-drawing", {
+    return await fetchApi("/api/games/submit-drawing", {
       method: "POST",
       body: JSON.stringify(data),
     });

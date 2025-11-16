@@ -1,39 +1,27 @@
 // app/components/CreateGameForm.tsx
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { gameApi } from "@/app/lib/api";
+import { CreateGameInput, createGameSchema } from "@/app/lib/validation";
+import { GameMode } from "@/app/types/game.type";
 import {
-  Box,
-  TextField,
-  Button,
-  MenuItem,
-  Stack,
   Alert,
+  Box,
+  Button,
+  Divider,
   FormControl,
   InputLabel,
+  MenuItem,
   Select,
   Slider,
+  Stack,
+  TextField,
   Typography,
-  Grid,
-  Divider,
 } from "@mui/material";
-import { z, ZodError } from "zod";
-import { gameApi } from "@/app/lib/api";
-
-// Validation schema
-const createGameSchema = z.object({
-  hostNickname: z.string().min(1, "Nickname is required").max(50, "Too long"),
-  theme: z.string().min(1, "Theme is required").max(100, "Too long"),
-  language: z.enum(["English", "Vietnamese", "Spanish", "French", "Japanese"]),
-  maxRounds: z.number().min(1).max(5),
-  drawingTime: z.number().min(30).max(300),
-  guessingTime: z.number().min(30).max(180),
-  gameMode: z.enum(["MULTIPLAYER", "VERSUS"]),
-  turnMode: z.enum(["SEQUENTIAL", "RANDOM"]),
-});
-
-type CreateGameInput = z.infer<typeof createGameSchema>;
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ZodError } from "zod";
+import CreateGameSummary from "./_components/CreateGameSummary";
 
 export default function CreateGameForm() {
   const router = useRouter();
@@ -43,12 +31,12 @@ export default function CreateGameForm() {
   const [formData, setFormData] = useState<CreateGameInput>({
     hostNickname: "",
     theme: "",
-    language: "English",
+    // language: "English",
     maxRounds: 3,
     drawingTime: 120,
     guessingTime: 60,
-    gameMode: "VERSUS",
-    turnMode: "SEQUENTIAL",
+    gameMode: GameMode.VERSUS,
+    // turnMode: TurnMode.SEQUENTIAL,
   });
 
   const handleChange = (field: keyof CreateGameInput) => (event: any) => {
@@ -117,7 +105,7 @@ export default function CreateGameForm() {
           required
           fullWidth
           helperText='This will be your display name in the game'
-          inputProps={{ maxLength: 50 }}
+          slotProps={{ htmlInput: { maxLength: 50 } }}
         />
 
         <Divider />
@@ -131,25 +119,8 @@ export default function CreateGameForm() {
           fullWidth
           placeholder='e.g., Animals, Food, Movies, Sports'
           helperText='AI will generate 5 words related to this theme'
-          inputProps={{ maxLength: 100 }}
+          slotProps={{ htmlInput: { maxLength: 100 } }}
         />
-
-        {/* Language */}
-        <FormControl fullWidth>
-          <InputLabel>Language</InputLabel>
-          <Select
-            value={formData.language}
-            label='Language'
-            onChange={handleChange("language")}
-          >
-            <MenuItem value='English'>English</MenuItem>
-            <MenuItem value='Vietnamese'>Vietnamese (Tiếng Việt)</MenuItem>
-            <MenuItem value='Spanish'>Spanish (Español)</MenuItem>
-            <MenuItem value='French'>French (Français)</MenuItem>
-            <MenuItem value='Japanese'>Japanese (日本語)</MenuItem>
-          </Select>
-        </FormControl>
-
         <Divider />
 
         {/* Game Mode */}
@@ -160,31 +131,11 @@ export default function CreateGameForm() {
             label='Game Mode'
             onChange={handleChange("gameMode")}
           >
-            {/* TODO: next sprint*/}
-            {/* 
-            <MenuItem value='MULTIPLAYER'>
-              Multiplayer (2+ players take turns)
-            </MenuItem> */}
-            <MenuItem value='VERSUS'>Versus (1v1 head-to-head)</MenuItem>
+            <MenuItem value={GameMode.VERSUS} selected>
+              Versus (1v1 head-to-head)
+            </MenuItem>
           </Select>
         </FormControl>
-
-        {/* Turn Mode TODO: next sprint*/}
-        {/* <FormControl fullWidth>
-          <InputLabel>Turn Order</InputLabel>
-          <Select
-            value={formData.turnMode}
-            label='Turn Order'
-            onChange={handleChange("turnMode")}
-          >
-            <MenuItem value='SEQUENTIAL'>
-              Sequential (Players take turns in order)
-            </MenuItem>
-            <MenuItem value='RANDOM'>
-              Random (Random player each round)
-            </MenuItem>
-          </Select>
-        </FormControl> */}
 
         <Divider />
 
@@ -250,49 +201,7 @@ export default function CreateGameForm() {
         <Divider />
 
         {/* Summary */}
-        <Box sx={{ bgcolor: "grey.100", p: 2, borderRadius: 1 }}>
-          <Typography variant='subtitle2' gutterBottom>
-            Game Summary:
-          </Typography>
-          <Grid container spacing={1}>
-            <Grid size={{ xs: 6 }}>
-              <Typography variant='body2' color='text.secondary'>
-                Mode:
-              </Typography>
-            </Grid>
-            <Grid size={{ xs: 6 }}>
-              <Typography variant='body2'>
-                {formData.gameMode === "MULTIPLAYER"
-                  ? "Multiplayer"
-                  : "1v1 Versus"}
-              </Typography>
-            </Grid>
-            <Grid size={{ xs: 6 }}>
-              <Typography variant='body2' color='text.secondary'>
-                Rounds:
-              </Typography>
-            </Grid>
-            <Grid size={{ xs: 6 }}>
-              <Typography variant='body2'>{formData.maxRounds}</Typography>
-            </Grid>
-            <Grid size={{ xs: 6 }}>
-              <Typography variant='body2' color='text.secondary'>
-                Est. Duration:
-              </Typography>
-            </Grid>
-            <Grid size={{ xs: 6 }}>
-              <Typography variant='body2'>
-                ~
-                {Math.ceil(
-                  ((formData.drawingTime + formData.guessingTime) *
-                    formData.maxRounds) /
-                    60
-                )}{" "}
-                minutes
-              </Typography>
-            </Grid>
-          </Grid>
-        </Box>
+        <CreateGameSummary props={formData} />
 
         {/* Submit Button */}
         <Button

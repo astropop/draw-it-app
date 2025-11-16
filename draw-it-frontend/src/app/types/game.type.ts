@@ -115,12 +115,12 @@ export interface GameSpectatorDTO {
 export interface CreateGameRequest {
   hostNickname: string;
   theme: string;
-  language: string;
+  // language: string;
   maxRounds: number;
   drawingTime: number;
   guessingTime: number;
   gameMode: GameMode;
-  turnMode: TurnMode;
+  // turnMode: TurnMode;
 }
 
 export interface JoinGameRequest {
