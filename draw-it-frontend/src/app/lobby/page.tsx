@@ -22,7 +22,7 @@ async function getGames() {
     return [];
   }
 
-  return response.json();
+  return await response.json();
 }
 
 export default async function LobbyPage() {

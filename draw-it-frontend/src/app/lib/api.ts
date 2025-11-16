@@ -1,5 +1,7 @@
+import { mockGamesLobby } from "../mock/mockdata.unified";
 import {
   CreateGameRequest,
+  GameItemList,
   GameResponseDTO,
   JoinGameRequest,
   SubmitDrawingRequest,
@@ -108,9 +110,19 @@ export const gameApi = {
         resolve();
       });
     }
-    return fetchApi("/api/games/submit-guess", {
+    return await fetchApi("/api/games/submit-guess", {
       method: "POST",
       body: JSON.stringify(data),
     });
+  },
+
+  // Get Game list
+  getGameList: async (): Promise<GameItemList[]> => {
+    if (useMockApi()) {
+      return new Promise((resolve) => {
+        resolve(mockGamesLobby);
+      });
+    }
+    return await fetchApi("/api/games/list", { method: "GET" });
   },
 };

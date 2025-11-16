@@ -47,7 +47,7 @@ export default function CreateGameForm() {
     maxRounds: 3,
     drawingTime: 120,
     guessingTime: 60,
-    gameMode: "MULTIPLAYER",
+    gameMode: "VERSUS",
     turnMode: "SEQUENTIAL",
   });
 
@@ -160,15 +160,17 @@ export default function CreateGameForm() {
             label='Game Mode'
             onChange={handleChange("gameMode")}
           >
+            {/* TODO: next sprint*/}
+            {/* 
             <MenuItem value='MULTIPLAYER'>
               Multiplayer (2+ players take turns)
-            </MenuItem>
+            </MenuItem> */}
             <MenuItem value='VERSUS'>Versus (1v1 head-to-head)</MenuItem>
           </Select>
         </FormControl>
 
-        {/* Turn Mode */}
-        <FormControl fullWidth>
+        {/* Turn Mode TODO: next sprint*/}
+        {/* <FormControl fullWidth>
           <InputLabel>Turn Order</InputLabel>
           <Select
             value={formData.turnMode}
@@ -182,7 +184,7 @@ export default function CreateGameForm() {
               Random (Random player each round)
             </MenuItem>
           </Select>
-        </FormControl>
+        </FormControl> */}
 
         <Divider />
 
@@ -304,11 +306,7 @@ export default function CreateGameForm() {
           {loading ? "Creating Game..." : "Create Game"}
         </Button>
 
-        <Button
-          variant='outlined'
-          fullWidth
-          onClick={() => router.push("/lobby")}
-        >
+        <Button variant='outlined' fullWidth onClick={() => router.push("/")}>
           Back to Lobby
         </Button>
       </Stack>

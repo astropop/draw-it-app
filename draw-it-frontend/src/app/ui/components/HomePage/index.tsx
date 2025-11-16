@@ -1,58 +1,18 @@
 "use client";
 
-// app/page.tsx
-import {
-  Container,
-  Typography,
-  Button,
-  Stack,
-  Paper,
-  Box,
-} from "@mui/material";
-import Link from "next/link";
+// Top banner
+import { Box, Container, Paper, Typography } from "@mui/material";
 
 const HomePage = () => {
   return (
-    <Container maxWidth='sm' sx={{ py: 8 }}>
+    <Container sx={{ pt: 6 }}>
       <Paper elevation={3} sx={{ p: 6, textAlign: "center" }}>
         <Typography variant='h3' component='h1' gutterBottom>
-          🎨 Drawing Game
+          Draw-it
         </Typography>
-        <Typography variant='body1' color='text.secondary' paragraph>
-          Draw, guess, and have fun with friends!
+        <Typography variant='body1' color='text.secondary' component='p'>
+          Draw, guess, and have fun!
         </Typography>
-
-        <Stack spacing={2} sx={{ mt: 4 }}>
-          <Button
-            component={Link}
-            href='/create'
-            variant='contained'
-            size='large'
-            fullWidth
-          >
-            Create New Game
-          </Button>
-
-          <Button
-            component={Link}
-            href='/join'
-            variant='outlined'
-            size='large'
-            fullWidth
-          >
-            Join Game
-          </Button>
-
-          <Button
-            component={Link}
-            href='/lobby'
-            variant='outlined'
-            size='large'
-            fullWidth
-          >
-            Browse Games
-          </Button>
-        </Stack>
 
         <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: "divider" }}>
           <Typography variant='caption' color='text.secondary'>
@@ -64,6 +24,3 @@ const HomePage = () => {
   );
 };
 export default HomePage;
-// export default async function HomePage() {
-
-// }

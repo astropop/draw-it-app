@@ -201,3 +201,13 @@ export interface JoinGameRequest {
   gameCode: string;
   nickname: string;
 }
+
+export interface GameItemList {
+  gameCode: string;
+  theme: string;
+  status: string;
+  playerCount: number;
+  createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+}

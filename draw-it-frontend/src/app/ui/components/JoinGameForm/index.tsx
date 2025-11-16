@@ -185,11 +185,7 @@ export default function JoinGameForm() {
           >
             Create New Game
           </Button>
-          <Button
-            variant='outlined'
-            fullWidth
-            onClick={() => router.push("/lobby")}
-          >
+          <Button variant='outlined' fullWidth onClick={() => router.push("/")}>
             Browse Games
           </Button>
         </Stack>
