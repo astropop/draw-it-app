@@ -1,15 +1,8 @@
 "use client";
 
 import { GameItemList } from "@/app/types/game.type";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Typography,
-} from "@mui/material";
-import router from "next/router";
+import { Box, Card, CardContent, Chip, Typography } from "@mui/material";
+import { useRouter } from "next/navigation";
 import ButtonGameCard from "./_components/ButtonGameCard";
 
 type GameCardProps = {
@@ -28,6 +21,7 @@ type GameCardProps = {
 };
 
 const GameCard = ({ game, getStatusLabel, getStatusColor }: GameCardProps) => {
+  const router = useRouter();
   return (
     <>
       <Card

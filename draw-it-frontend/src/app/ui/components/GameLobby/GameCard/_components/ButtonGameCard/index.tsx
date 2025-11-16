@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, ButtonOwnProps } from "@mui/material";
-import router from "next/router";
+import { useRouter } from "next/navigation";
 import { Ref } from "react";
 
 type ButtonGameCardProps = {
@@ -19,6 +19,7 @@ const ButtonGameCard = ({
   ref,
   ...props
 }: ButtonGameCardProps) => {
+  const router = useRouter();
   return (
     <>
       <Button
