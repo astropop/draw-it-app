@@ -2,11 +2,11 @@
 
 import { getMockGameByCode } from "../mock/mockdata.unified";
 import {
+  CreateGameRequest,
   GameResponseDTO,
   GameStatus,
   JoinGameRequest,
   SubmitDrawingResponse,
-  CreateGameRequest,
 } from "../types/game.type";
 
 export const mockApiResponses = {
@@ -17,7 +17,6 @@ export const mockApiResponses = {
       "550e8400-e29b-41d4-a716-" + Math.random().toString(36).substring(2, 14),
     status: GameStatus.WAITING,
     theme: request.theme,
-    language: request.language,
     maxRounds: request.maxRounds,
     currentRound: 0,
     drawingTime: request.drawingTime,

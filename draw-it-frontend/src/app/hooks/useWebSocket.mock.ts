@@ -17,7 +17,7 @@ export function useMockWebSocket(gameCode: string | null) {
   useEffect(() => {
     if (!gameCode) return;
 
-    console.log("🔌 Mock WebSocket connected for:", gameCode);
+    console.log("Mock WebSocket connected for:", gameCode);
 
     // Simulate connection delay
     setTimeout(() => {
@@ -59,16 +59,16 @@ export function useMockWebSocket(gameCode: string | null) {
     }, 100);
 
     return () => {
-      console.log("🔌 Mock WebSocket disconnected");
+      console.log("Mock WebSocket disconnected");
     };
   }, [gameCode]);
 
   const kickPlayer = (sessionId: string) => {
-    console.log("🚫 Mock: Kick player", sessionId);
+    console.log("Mock: Kick player", sessionId);
   };
 
   const sendDrawing = (data: string) => {
-    console.log("🎨 Mock: Drawing sent");
+    console.log("Mock: Drawing sent");
     setCurrentDrawing(data);
   };
 

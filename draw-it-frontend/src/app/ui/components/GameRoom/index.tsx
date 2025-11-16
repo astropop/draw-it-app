@@ -88,7 +88,7 @@ export default function GameRoom({ gameData }: GameRoomProps) {
     setCurrentNickname(nickname);
     setLocalGameState(initialGameState);
 
-    console.log("🎮 GameRoom initialized:", {
+    console.log("GameRoom initialized:", {
       sessionId,
       nickname,
       gameCode: gameData.gameCode,
@@ -232,7 +232,7 @@ export default function GameRoom({ gameData }: GameRoomProps) {
       sendDrawing(imageData);
       setTimerType(null);
       setTimeLeft(0);
-      console.log("✅ Drawing submitted");
+      console.log("Drawing submitted");
     } catch (error) {
       console.error("Failed to submit drawing:", error);
       alert("Failed to submit drawing. Please try again.");
@@ -263,7 +263,7 @@ export default function GameRoom({ gameData }: GameRoomProps) {
       setRoundComplete(true);
       setTimerType(null);
       setTimeLeft(0);
-      console.log("✅ Guess submitted:", guess);
+      console.log("Guess submitted:", guess);
     } catch (error) {
       console.error("Failed to submit guess:", error);
       alert("Failed to submit guess. Please try again.");

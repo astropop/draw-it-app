@@ -14,59 +14,61 @@ import {
 } from "@mui/material";
 import { z, ZodError } from "zod";
 import { gameApi } from "@/app/lib/api";
-
-interface JoinGameFormPrefilledProps {
-  gameCode: string;
-}
-
-const joinGameSchema = z.object({
-  gameCode: z.string().length(8),
-  nickname: z.string().min(1).max(50),
-});
+import {
+  JoinGameFormPrefilledProps,
+  JoinGamePrefilledInput,
+  joinGamePrefilledSchema,
+} from "@/app/lib/validation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export default function JoinGameFormPrefilled({
   gameCode,
 }: JoinGameFormPrefilledProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [nickname, setNickname] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<JoinGamePrefilledInput>({
+    resolver: zodResolver(joinGamePrefilledSchema),
+    defaultValues: {
+      gameCode,
+      nickname: "",
+    },
+  });
 
+  // get data in real time
+  const formValues = watch();
+
+  const onSubmit = async (data: JoinGamePrefilledInput) => {
     try {
-      const validatedData = joinGameSchema.parse({ gameCode, nickname });
-      setLoading(true);
-
-      const response = await gameApi.joinGame(validatedData);
+      const response = await gameApi.joinGame(data);
 
       localStorage.setItem("sessionId", response.sessionId);
       localStorage.setItem("gameCode", response.gameCode);
-      localStorage.setItem("nickname", nickname);
+      localStorage.setItem("nickname", data.nickname);
       localStorage.setItem("lastGame", response.gameCode);
-      localStorage.setItem("lastNickname", nickname);
+      localStorage.setItem("lastNickname", data.nickname);
 
       router.push(`/game/${response.gameCode}`);
-    } catch (err) {
-      setLoading(false);
-
-      if (err instanceof ZodError) {
-        setError(err.message);
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Failed to join game");
-      }
+    } catch (error) {
+      setError("root", {
+        message:
+          error instanceof Error ? error.message : "Failed to create game",
+      });
     }
   };
 
   return (
-    <Box component='form' onSubmit={handleSubmit}>
-      {error && (
+    <Box component='form' onSubmit={handleSubmit(onSubmit)}>
+      {errors.root && (
         <Alert severity='error' sx={{ mb: 3 }}>
-          {error}
+          {errors.root.message}
         </Alert>
       )}
 
@@ -77,6 +79,7 @@ export default function JoinGameFormPrefilled({
             Game Code:
           </Typography>
           <Chip
+            {...register("gameCode")}
             label={gameCode}
             color='primary'
             sx={{
@@ -90,29 +93,30 @@ export default function JoinGameFormPrefilled({
 
         {/* Nickname Input */}
         <TextField
+          {...register("nickname")}
           label='Your Nickname'
-          value={nickname}
-          onChange={(e) => {
-            setNickname(e.target.value);
-            setError(null);
-          }}
+          error={!!errors.nickname}
           required
           fullWidth
           autoFocus
           placeholder='Enter your display name'
-          inputProps={{ maxLength: 50 }}
+          slotProps={{ htmlInput: { maxLength: 50 } }}
         />
-
+        {errors.nickname && (
+          <Typography component='span' color='error'>
+            {errors.nickname.message}
+          </Typography>
+        )}
         {/* Submit Button */}
         <Button
           type='submit'
           variant='contained'
           size='large'
           fullWidth
-          disabled={loading || !nickname}
+          disabled={isSubmitting}
           sx={{ py: 1.5 }}
         >
-          {loading ? "Joining..." : "Join Game"}
+          {isSubmitting ? "Joining..." : "Join Game"}
         </Button>
 
         <Button

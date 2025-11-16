@@ -26,7 +26,9 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <AppRouterCacheProvider>{children}</AppRouterCacheProvider>
+        <AppRouterCacheProvider options={{ prepend: true }}>
+          {children}
+        </AppRouterCacheProvider>
       </body>
     </html>
   );
