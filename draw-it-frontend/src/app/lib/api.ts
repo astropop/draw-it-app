@@ -8,7 +8,7 @@ import {
   SubmitDrawingResponse,
   SubmitGuessRequest,
 } from "../types/game.type";
-import { useMockApi, mockApiResponses } from "./mockApi";
+import { mockApiResponses, isUseMockApi } from "./mockApi";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -44,7 +44,7 @@ export const gameApi = {
   //CreateGameRequest
   createGame: async (data: CreateGameRequest): Promise<GameResponseDTO> => {
     // Use mock if enabled
-    if (useMockApi()) {
+    if (isUseMockApi()) {
       return new Promise((resolve) => {
         resolve(mockApiResponses.createGame(data));
       });
@@ -59,8 +59,8 @@ export const gameApi = {
   // JoinGameRequest
   joinGame: async (data: JoinGameRequest): Promise<GameResponseDTO> => {
     // Use mock if enabled
-    if (useMockApi()) {
-      return new Promise((resolve, reject) => {
+    if (isUseMockApi()) {
+      return new Promise((resolve) => {
         resolve(mockApiResponses.joinGame(data));
       });
     }
@@ -72,7 +72,7 @@ export const gameApi = {
 
   startGame: async (gameCode: string): Promise<void> => {
     // UseMock
-    if (useMockApi()) {
+    if (isUseMockApi()) {
       return new Promise((resolve) => {
         console.log("Mock: Game started", gameCode);
         resolve();
@@ -89,7 +89,7 @@ export const gameApi = {
     data: SubmitDrawingRequest
   ): Promise<SubmitDrawingResponse> => {
     // UseMock
-    if (useMockApi()) {
+    if (isUseMockApi()) {
       return new Promise((resolve) => {
         resolve(mockApiResponses.submitDrawing());
       });
@@ -104,7 +104,7 @@ export const gameApi = {
   //SubmitGuessRequest
   submitGuess: async (data: SubmitGuessRequest): Promise<void> => {
     //usemock
-    if (useMockApi()) {
+    if (isUseMockApi()) {
       return new Promise((resolve) => {
         console.log("Mock: Guess ok", data);
         resolve();
@@ -118,7 +118,7 @@ export const gameApi = {
 
   // Get Game list
   getGameList: async (): Promise<GameItemList[]> => {
-    if (useMockApi()) {
+    if (isUseMockApi()) {
       return new Promise((resolve) => {
         resolve(mockGamesLobby);
       });

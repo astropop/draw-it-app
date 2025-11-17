@@ -30,7 +30,7 @@ export default function DrawingCanvas({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  });
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;

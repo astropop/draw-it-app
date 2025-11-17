@@ -2,25 +2,14 @@
 
 import { Box, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 
 const RecentGames = () => {
   const router = useRouter();
-  const [recentGame, setRecentGame] = useState<{
-    code: string;
-    nickname: string;
-  } | null>(null);
 
-  useEffect(() => {
-    const lastGame = localStorage.getItem("lastGame");
-    const lastNickname = localStorage.getItem("lastNickname");
+  const lastGame = localStorage.getItem("lastGame");
+  const lastNickname = localStorage.getItem("lastNickname");
 
-    if (lastGame && lastNickname) {
-      setRecentGame({ code: lastGame, nickname: lastNickname });
-    }
-  }, []);
-
-  if (!recentGame) return null;
+  if (!lastGame) return null;
 
   return (
     <Box sx={{ mt: 2 }}>
@@ -36,10 +25,10 @@ const RecentGames = () => {
           cursor: "pointer",
           "&:hover": { bgcolor: "grey.200" },
         }}
-        onClick={() => router.push(`/game/${recentGame.code}`)}
+        onClick={() => router.push(`/game/${lastGame}`)}
       >
         <Typography variant='body2'>
-          <strong>{recentGame.code}</strong> as <em>{recentGame.nickname}</em>
+          <strong>{lastGame}</strong> as <em>{lastNickname}</em>
         </Typography>
         <Typography variant='caption' color='text.secondary'>
           Click to rejoin

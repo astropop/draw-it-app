@@ -1,7 +1,7 @@
 // app/lobby/page.tsx
 
 import { mockGamesLobby } from "../mock/mockdata.unified";
-import GameLobby, { arrLocal } from "../ui/components/GameLobby";
+import GameLobby from "../ui/components/GameLobby";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 

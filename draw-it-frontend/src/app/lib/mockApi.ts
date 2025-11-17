@@ -43,7 +43,7 @@ export const mockApiResponses = {
       throw new Error("Game not found");
     }
     // Get spectator data to check status
-    const { spectator } = mockGame as any;
+    const { spectator } = mockGame;
 
     // Check if game already started
     if (spectator.status === GameStatus.IN_PROGRESS) {
@@ -98,6 +98,6 @@ export const mockApiResponses = {
 };
 
 // Check if should use mock
-export const useMockApi = () => {
+export const isUseMockApi = () => {
   return process.env.NEXT_PUBLIC_USE_MOCK === "true";
 };

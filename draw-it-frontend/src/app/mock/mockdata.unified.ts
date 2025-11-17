@@ -69,7 +69,6 @@ export const game1RoomAsHost: GameResponseDTO = {
   sessionId: "game1-session-001", // John's session
   status: GameStatus.WAITING,
   theme: "Animals",
-  language: "English",
   maxRounds: 3,
   currentRound: 0,
   drawingTime: 120,
@@ -178,7 +177,6 @@ export const game2RoomWordSelection: GameResponseDTO = {
   sessionId: "game2-session-002", // Liam's turn
   status: GameStatus.IN_PROGRESS,
   theme: "Food",
-  language: "English",
   maxRounds: 5,
   currentRound: 2,
   drawingTime: 180,
@@ -197,7 +195,6 @@ export const game2RoomAsDrawer: GameResponseDTO = {
   sessionId: "game2-session-002", // Liam's session
   status: GameStatus.IN_PROGRESS,
   theme: "Food",
-  language: "English",
   maxRounds: 5,
   currentRound: 2,
   drawingTime: 180,
@@ -351,7 +348,6 @@ export const game3Room: GameResponseDTO = {
   sessionId: "game3-session-001",
   status: GameStatus.FINISHED,
   theme: "Sports",
-  language: "English",
   maxRounds: 3,
   currentRound: 3,
   drawingTime: 120,

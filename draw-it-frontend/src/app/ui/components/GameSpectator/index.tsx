@@ -31,11 +31,13 @@ export default function GameSpectator({
     initialData.gameCode
   );
 
-  useEffect(() => {
-    if (players.length > 0) {
-      setGameData((prev: any) => ({ ...prev, players }));
-    }
-  }, [players]);
+  // update list players
+  // useEffect(() => {
+  //   if (players.length > 0) {
+  //     setGameData((prev) => ({ ...prev, players }));
+  //     // const tempPlayers = gameData.players;
+  //   }
+  // }, [players]);
 
   useEffect(() => {
     if (gameState?.type === "GAME_FINISHED") {

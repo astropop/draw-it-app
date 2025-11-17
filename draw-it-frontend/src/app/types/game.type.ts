@@ -72,7 +72,7 @@ export interface GameResponseDTO {
   sessionId: string;
   status: GameStatus;
   theme?: string;
-  language?: string;
+  // language?: string;
   maxRounds?: number;
   currentRound?: number;
   drawingTime?: number;
@@ -192,10 +192,10 @@ export interface GameStateMessage {
   status?: GameStatus;
 }
 
-export interface WebSocketMessage {
-  type: string;
-  data: any; // Can be more specific based on message type
-}
+// export interface WebSocketMessage {
+//   type: string;
+//   // data: any; // Can be more specific based on message type
+// }
 
 export interface JoinGameRequest {
   gameCode: string;

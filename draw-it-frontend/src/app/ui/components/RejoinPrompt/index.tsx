@@ -1,41 +1,30 @@
 "use client";
 
+import { Button, Dialog } from "@mui/material";
 import { useEffect, useState } from "react";
-import { Button, Dialog, TextField } from "@mui/material";
 
 export default function RejoinPrompt() {
   const [open, setOpen] = useState(false);
-  const [nickname, setNickname] = useState("");
-  const [gameCode, setGameCode] = useState("");
 
-  useEffect(() => {
-    // Check localStorage
-    const savedGame = localStorage.getItem("lastGame");
-    const savedNickname = localStorage.getItem("lastNickname");
-
-    if (savedGame && savedNickname) {
-      setGameCode(savedGame);
-      setNickname(savedNickname);
-      setOpen(true);
-    }
-  }, []);
+  const savedGame = localStorage.getItem("lastGame");
+  const savedNickname = localStorage.getItem("lastNickname");
 
   const handleRejoin = async () => {
     await fetch(`/api/games/rejoin`, {
       method: "POST",
       credentials: "include",
-      body: JSON.stringify({ gameCode, nickname }),
+      body: JSON.stringify({ savedGame, savedNickname }),
     });
 
-    window.location.href = `/game/${gameCode}`;
+    window.location.href = `/game/${savedGame}`;
   };
 
   return (
     <Dialog open={open}>
       <div>
         <h3>Bạn có muốn quay lại game?</h3>
-        <p>Game: {gameCode}</p>
-        <p>Tên: {nickname}</p>
+        <p>Game: {savedGame}</p>
+        <p>Tên: {savedNickname}</p>
         <Button onClick={handleRejoin}>Quay lại</Button>
         <Button
           onClick={() => {

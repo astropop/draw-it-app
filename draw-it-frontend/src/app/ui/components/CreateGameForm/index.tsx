@@ -21,7 +21,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import CreateGameSummary from "./_components/CreateGameSummary";
+import CreateGameSummary from "./CreateGameSummary";
 
 export default function CreateGameForm() {
   const router = useRouter();
@@ -50,7 +50,7 @@ export default function CreateGameForm() {
   const formValues = watch();
 
   const onSubmit = async (data: CreateGameInput) => {
-    console.log("obSubmit", data);
+    console.log("onSubmit", data);
 
     try {
       // Call API

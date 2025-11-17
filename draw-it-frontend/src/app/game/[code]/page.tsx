@@ -1,6 +1,6 @@
-import { gameApi } from "@/app/lib/api";
 import { getMockGameByCode } from "@/app/mock/mockdata.unified";
 import GameRoom from "@/app/ui/components/GameRoom";
+import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -60,7 +60,6 @@ async function getGameData(code: string) {
   );
 
   if (!response.ok) {
-    // throw new Error("Game not found");
     notFound();
   }
 
@@ -82,3 +81,7 @@ export default async function GamePage({
 
   return <GameRoom gameData={gameData} />;
 }
+
+export const metadata: Metadata = {
+  title: "Draw-it - Create Game",
+};

@@ -1,10 +1,10 @@
 // app/hooks/useWebSocket.mock.ts - COMPLETE VERSION
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  PlayerDTO,
   GameStateMessage,
   GuessSubmittedMessage,
+  PlayerDTO,
 } from "../types/game.type";
 
 export function useMockWebSocket(gameCode: string | null) {

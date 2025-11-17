@@ -37,7 +37,7 @@ export default function JoinGameForm() {
   });
 
   // get value in real time
-  const formValues = watch();
+  // const formValues = watch();
 
   const onSubmit = async (data: JoinGameInput) => {
     try {

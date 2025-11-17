@@ -1,26 +1,24 @@
 // app/components/JoinGameFormPrefilled.tsx
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  Box,
-  TextField,
-  Button,
-  Stack,
-  Alert,
-  Typography,
-  Chip,
-} from "@mui/material";
-import { z, ZodError } from "zod";
 import { gameApi } from "@/app/lib/api";
 import {
   JoinGameFormPrefilledProps,
   JoinGamePrefilledInput,
   joinGamePrefilledSchema,
 } from "@/app/lib/validation";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
 
 export default function JoinGameFormPrefilled({
   gameCode,

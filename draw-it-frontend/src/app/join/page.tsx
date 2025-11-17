@@ -1,6 +1,6 @@
 // app/join/page.tsx
 
-import { Container, Typography, Paper, Box } from "@mui/material";
+import { Container, Paper, Typography } from "@mui/material";
 import JoinGameForm from "../ui/components/JoinGameForm";
 
 export default function JoinGamePage() {
