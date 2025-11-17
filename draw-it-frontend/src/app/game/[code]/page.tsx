@@ -1,3 +1,4 @@
+import { gameApi } from "@/app/lib/api";
 import { getMockGameByCode } from "@/app/mock/mockdata.unified";
 import GameRoom from "@/app/ui/components/GameRoom";
 import { Metadata } from "next";
@@ -51,19 +52,13 @@ async function getGameData(code: string) {
     notFound();
   }
 
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/games/${code}`,
-    {
-      cache: "no-store",
-      credentials: "include",
-    }
-  );
+  const response = await gameApi.getGame(code);
 
-  if (!response.ok) {
+  if (!response) {
     notFound();
   }
 
-  return await response.json();
+  return response;
 }
 
 export default async function GamePage({

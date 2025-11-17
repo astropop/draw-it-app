@@ -136,4 +136,8 @@ export const gameApi = {
     }
     return await fetchApi(`/api/games/${gameCode}/spectate`, { method: "GET" });
   },
+
+  getGame: async (gameCode: string): Promise<GameResponseDTO> => {
+    return await fetchApi(`/api/games/${gameCode}`, { method: "GET" });
+  },
 };
