@@ -1,8 +1,9 @@
-import { mockGamesLobby } from "../mock/mockdata.unified";
+import { getMockGameByCode, mockGamesLobby } from "../mock/mockdata.unified";
 import {
   CreateGameRequest,
   GameItemList,
   GameResponseDTO,
+  GameSpectatorDTO,
   JoinGameRequest,
   SubmitDrawingRequest,
   SubmitDrawingResponse,
@@ -28,6 +29,7 @@ export async function fetchApi<T>(
     ...options,
     credentials: "include", // Gửi session cookie
     headers,
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -124,5 +126,14 @@ export const gameApi = {
       });
     }
     return await fetchApi("/api/games/list", { method: "GET" });
+  },
+
+  spectateGame: async (gameCode: string): Promise<GameSpectatorDTO> => {
+    if (isUseMockApi()) {
+      return new Promise((resolve) => {
+        resolve(getMockGameByCode(gameCode).spectator);
+      });
+    }
+    return await fetchApi(`/api/games/${gameCode}/spectate`, { method: "GET" });
   },
 };

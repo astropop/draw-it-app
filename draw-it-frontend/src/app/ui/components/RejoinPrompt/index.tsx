@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Dialog } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function RejoinPrompt() {
   const [open, setOpen] = useState(false);

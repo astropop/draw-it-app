@@ -23,7 +23,7 @@ export default function JoinGameForm() {
   const {
     register,
     handleSubmit,
-    watch,
+    // watch,
     setValue,
     setError,
     formState: { errors, isSubmitting },
