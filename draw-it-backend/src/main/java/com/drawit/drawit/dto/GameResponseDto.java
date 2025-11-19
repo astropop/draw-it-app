@@ -1,0 +1,33 @@
+package com.drawit.drawit.dto;
+
+
+import com.drawit.drawit.enums.GameStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+/**
+ * game response send back to fe
+ */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class GameResponseDto {
+    private Long gameId;
+    private String gameCode;
+    private List<String> words;
+    private String sessionId;
+    private GameStatus status;
+    private String theme;
+    private Integer maxRounds;
+    private Integer currentRound;
+    private Integer drawingTime;
+    private Integer guessingTime;
+    private Boolean isHost;
+    private List<PlayerDto> players;
+    private String currentDrawerSessionId;
+}
