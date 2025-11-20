@@ -9,6 +9,7 @@ import com.drawit.drawit.entity.GuestPlayer;
 import com.drawit.drawit.enums.GameStatus;
 import com.drawit.drawit.repository.GameRepository;
 import com.drawit.drawit.repository.GuestPlayerRepository;
+import com.drawit.drawit.repository.WordCacheRepository;
 import com.drawit.drawit.util.GameCodeGenerator;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -30,29 +30,27 @@ import java.util.stream.Collectors;
 public class GameService {
 
     @Autowired
-    private  GameRepository gameRepository;
+    private GameRepository gameRepository;
     @Autowired
-    private  GuestPlayerRepository guestPlayerRepository;
+    private GuestPlayerRepository guestPlayerRepository;
     @Autowired
-    private  HuggingFaceService huggingFaceService;
+    private HuggingFaceService huggingFaceService;
     @Autowired
-    private  RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private WordCacheRepository wordCacheRepository;
 
     @Transactional
     public GameResponseDto createGame(CreateGameRequestDto request, HttpSession session) {
-        log.info("Creating game with theme: {}", request.getTheme());
+        String theme = request.getTheme().trim().toLowerCase();
+        log.info("Creating game with theme: {}", theme);
+
 
         // Generate unique game code
         String gameCode;
         do {
             gameCode = GameCodeGenerator.generate();
         } while (gameRepository.existsByGameCode(gameCode));
-
-        // Create host player
-        GuestPlayer host = new GuestPlayer();
-        host.setNickname(request.getHostNickname());
-        host.setIsHost(true);
-        host.setJoinedOrder(0);
 
         // Create game
         Game game = new Game();
@@ -65,16 +63,19 @@ public class GameService {
         game.setDrawingTime(request.getDrawingTime());
         game.setGuessingTime(request.getGuessingTime());
 
-
-
         // Save game first to get ID
         game = gameRepository.save(game);
 
-        // Set host game reference and ID
+        // Create host player
+        GuestPlayer host = new GuestPlayer();
+        host.setNickname(request.getHostNickname());
+        host.setIsHost(true);
+        host.setJoinedOrder(0);
         host.setGame(game);
-        game.setHostId(host.getId());
         host = guestPlayerRepository.save(host);
 
+
+        // Set host game reference and ID
         // Update game with host ID
         game.setHostId(host.getId());
         game = gameRepository.save(game);
@@ -85,15 +86,15 @@ public class GameService {
         session.setAttribute("nickname", host.getNickname());
 
         // Generate words using HuggingFace (or default)
-        List<String> words = huggingFaceService.generateWords(
-                request.getTheme(),
-                "English"
-        );
+
+
+        int wordCount = Math.max(request.getMaxRounds() + 2, 7);
+        List<String> words = huggingFaceService.getOrCreateKeywords(request.getTheme(), wordCount);
 
         // Cache in Redis
         String redisKey = "game:" + gameCode;
         Map<String, Object> gameState = new HashMap<>();
-        gameState.put("gameId", game.getId());
+        gameState.put("gameId", game.getId().toString());
         gameState.put("words", words);
         gameState.put("hostSessionId", host.getSessionId());
         gameState.put("status", game.getStatus().name());
@@ -102,6 +103,7 @@ public class GameService {
         redisTemplate.expire(redisKey, 2, TimeUnit.HOURS);
 
         log.info("Game created successfully: {}", gameCode);
+        log.info("Game created successfullyRedis: {}", redisTemplate.opsForHash().get(redisKey, "words"));
 
         // Build response
         return GameResponseDto.builder()

@@ -1,20 +1,23 @@
 package com.drawit.drawit.service;
 
-import lombok.Builder;
+import com.drawit.drawit.entity.WordCache;
+import com.drawit.drawit.repository.WordCacheRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.http.*;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
 import org.springframework.web.reactive.function.client.WebClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -27,101 +30,114 @@ public class HuggingFaceService {
     @Value("${huggingface.api.token}")
     private String apiToken;
 
+    @Autowired
+    private WordCacheRepository wordCacheRepository;
 
     private final WebClient.Builder webClientBuilder;
 
+    private final RedisTemplate<String, Object> redisTemplate;
 
-//    private final RestTemplate restTemplate = new RestTemplate();
-//    private final ObjectMapper objectMapper = new ObjectMapper();
+    /**
+     * generate and store into cache, calls AI when theme is new
+     * @param theme
+     * @param needCount
+     * @return
+     */
+    public List<String> getOrCreateKeywords(String theme, int needCount) {
 
-    public List<String> generateWords(String theme, String language) {
+        // 1. Try Word cache table
+        Optional<WordCache> cacheOpt = wordCacheRepository.findByThemeIgnoreCase(theme.toLowerCase());
+        if (cacheOpt.isPresent()) {
+            List<String> allWords = cacheOpt.get().getWords();
+            // if list size is bigger than count, return word in cache
+            if (allWords.size() >= needCount) {
+                Collections.shuffle(allWords);
+                return allWords.subList(0, needCount);
+            }
+        }
+
+
+        // 2. If not enough in cache, call AI and update cache
+        List<String> newWords = generateKeywordsFromAI(theme, needCount);
+        WordCache cache = new WordCache();
+        cache.setTheme(theme);
+        cache.setWords(newWords);
+        wordCacheRepository.save(cache);
+        log.info("Saved new cache for theme: {}", theme);
+
+        return newWords;
+    }
+
+    private List<String> generateKeywordsFromAI(String theme, int count) {
+        if (apiToken == null || apiToken.isEmpty()) return List.of();
+
+        String model = "openai/gpt-oss-20b";
+
+
+        String prompt = String.format(
+                "Generate %d simple English words about '%s'. Only the words, comma separated, nothing else.",
+                Math.max(count + 2, 7), theme);
+
+        WebClient webClient = webClientBuilder
+                .baseUrl(apiUrl)
+                .defaultHeader("Authorization", "Bearer " + apiToken)
+                .defaultHeader("Content-Type", "application/json")
+                .build();
+
+        Map<String, Object> requestBody = Map.of(
+                "model", model,
+                "stream", false,
+                "messages", List.of(Map.of(
+                                "role", "user",
+                                "content", prompt
+                        )
+                )
+        );
         try {
-
-            String model = "openai/gpt-oss-20b";
-            String prompt = String.format(
-                    "Generate 5 simple %s words related to '%s'. Only return the words separated by commas, nothing else.",
-                    language, theme
-            );
-
-
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.set("Authorization", "Bearer " + apiToken);
-//            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            Map<String, Object> requestBody = Map.of(
-//                    "model", model,
-                    "content", prompt,
-                    "parameters", Map.of(
-//                            "max_length", 50,
-                            "max_tokens", 100,
-                            "token", "hf_token",
-                            "temperature", 0.7,
-                            "provider", "together"
-                    )
-            );
-
-//            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
-            WebClient webClient = webClientBuilder
-                    .baseUrl(apiUrl)
-                    .defaultHeaders(httpHeaders -> {
-                        httpHeaders.put("Authorization", Collections.singletonList("Bearer " + apiToken));
-                        httpHeaders.put(HttpHeaders.CONTENT_TYPE, Collections.singletonList(MediaType.APPLICATION_JSON_VALUE));
-                    })
-                    .build();
-
             String response = webClient.post()
-                    .uri("/" + model)
                     .bodyValue(requestBody)
-//                    .header()
                     .retrieve()
                     .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(12))
                     .block();
-
-//            ResponseEntity<String> response = restTemplate.exchange(
-//                    apiUrl + "/" + model,
-//                    HttpMethod.POST,
-//                    entity,
-//                    String.class
-//            );
-
-//            JsonNode jsonResponse = objectMapper.readTree(response.getBody());
-
-//            String generatedText = jsonResponse.get(0).get("generated_text").asString();
-            // Parse response and extract words
-            // This is simplified - you'll need to parse the actual HuggingFace response
-            return parseWords(response, prompt);
+            return parseWords2(response);
 
         } catch (Exception e) {
-            log.error("Failed to generate words from HuggingFace", e);
-            // Fallback to default words
-            return getDefaultWords(theme);
+            log.warn("HuggingFace API fail/timeout: {}", e.getMessage());
         }
+        return List.of();
     }
 
     /**
-     * return 5 parsed words
+     * return parsed words
      *
      * @param response
-     * @param prompt
      * @return
      */
-    private List<String> parseWords(String response, String prompt) {
+    private List<String> parseWords2(String response) {
         // Implement parsing logic based on HuggingFace response format
 
         if (response == null) {
             return List.of("word1", "word2", "word3", "word4", "word5");
         }
 
-        String[] words = response
-                .replace(prompt, "") // remove requested text
-                .trim()
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(response);
+
+        String content = root
+                .path("choices")
+                .get(0)
+                .path("message")
+                .path("content").asString();
+
+        String[] words = content.trim()
                 .split("[,\\n]");
+
 
         List<String> result = new ArrayList<>();
         for (String word : words) {
             String cleaned = word.trim().replaceAll("[^\\p{L}\\s]", "");
-            if (!cleaned.isEmpty() && result.size() < 5) {
+            if (!cleaned.isEmpty()) {
                 result.add(cleaned);
             }
         }
@@ -129,13 +145,15 @@ public class HuggingFaceService {
         return result;
     }
 
-    private List<String> getDefaultWords(String theme) {
-        // Default word lists based on theme
-        return switch (theme.toLowerCase()) {
-            case "animals" -> Arrays.asList("cat", "dog", "elephant", "lion", "tiger");
-            case "food" -> Arrays.asList("pizza", "burger", "sushi", "pasta", "salad");
-            case "sports" -> Arrays.asList("soccer", "basketball", "tennis", "volleyball", "baseball");
-            default -> Arrays.asList("house", "tree", "car", "phone", "book");
+    private List<String> getDefaultWords(String theme, int count) {
+        List<String> raw = switch (theme.toLowerCase()) {
+            case "animals" -> List.of("dog", "cat", "horse", "lion", "tiger", "bear", "elephant", "wolf");
+            case "food" -> List.of("pizza", "soup", "rice", "bread", "cake", "curry", "fish", "meat");
+            default -> List.of("house", "tree", "car", "star", "phone", "river", "book");
         };
+        List<String> copy = new ArrayList<>(raw);
+        Collections.shuffle(copy);
+        return copy.subList(0, Math.min(count, copy.size()));
     }
+
 }
