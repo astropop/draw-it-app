@@ -15,6 +15,7 @@ public class RedisConfig {
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
 
         ObjectMapper mapper = new ObjectMapper();
+
         GenericJacksonJsonRedisSerializer jsonSerializer = new GenericJacksonJsonRedisSerializer(mapper);
 
         RedisTemplate<String, Object> template = new RedisTemplate<>();
