@@ -1,0 +1,28 @@
+services:
+  redis:
+    image: redis:8.2-alpine
+    container_name: drawing-game-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      shared:
+        aliases:
+          - drawing-game-redis
+networks:
+  shared:
+    external: true
+    name: my_tailt_shared_net
+
+
+volumes:
+  redis-data:
+    driver: local
