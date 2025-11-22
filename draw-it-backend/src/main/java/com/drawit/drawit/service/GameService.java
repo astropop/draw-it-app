@@ -2,6 +2,9 @@ package com.drawit.drawit.service;
 
 
 import com.drawit.drawit.dto.*;
+import com.drawit.drawit.dto.websocket.DrawingSubmittedMessageDto;
+import com.drawit.drawit.dto.websocket.GameStateMessageDto;
+import com.drawit.drawit.dto.websocket.GuessSubmittedMessageDto;
 import com.drawit.drawit.entity.Game;
 import com.drawit.drawit.entity.GuestPlayer;
 import com.drawit.drawit.enums.GameStatus;
@@ -45,6 +48,8 @@ public class GameService {
     private WordCacheRepository wordCacheRepository;
     @Autowired
     private OCRService ocrService;
+    @Autowired
+    private GameWebSocketService webSocketService;
 
     /**
      *
@@ -195,6 +200,9 @@ public class GameService {
                 .filter(w -> !w.getUsed())
                 .map(WordStatusDto::getWord)
                 .collect(Collectors.toList());
+
+        // Broadcast player joined via WebSocket
+        webSocketService.broadcastPlayerJoined(request.getGameCode(), newPlayerDto);
 
         return GameResponseDto.builder()
                 .gameId(game.getId())
@@ -387,7 +395,7 @@ public class GameService {
             redisState = reconstructRedisState(game);
         }
 
-        // RANDOM first drawer (yêu cầu 2)
+        // RANDOM first drawer
         Random random = new Random();
         List<PlayerDto> players = redisState.getPlayers();
         int randomIndex = random.nextInt(players.size());
@@ -415,11 +423,23 @@ public class GameService {
 
         log.info("Game {} started. First drawer: {}", gameCode, firstDrawer.getNickname());
 
-        // Return response
+        // Return word into response
         List<String> availableWords = redisState.getWords().stream()
                 .filter(w -> !w.getUsed())
                 .map(WordStatusDto::getWord)
                 .collect(Collectors.toList());
+
+        // Broadcast game started
+        GameStateMessageDto stateMessage = GameStateMessageDto.builder()
+                .type("GAME_STARTED")
+                .gameCode(gameCode)
+                .currentRound(1)
+                .maxRounds(redisState.getMaxRounds())
+                .currentDrawer(firstDrawer.getNickname())
+                .status(GameStatus.IN_PROGRESS)
+                .build();
+
+        webSocketService.broadcastGameState(gameCode, stateMessage);
 
         return GameResponseDto.builder()
                 .gameId(game.getId())
@@ -539,6 +559,17 @@ public class GameService {
         // Save to Redis
         redisTemplate.opsForValue().set(redisKey, redisState, 2, TimeUnit.HOURS);
 
+        // Broadcast drawing to all players
+        DrawingSubmittedMessageDto drawingMessage = DrawingSubmittedMessageDto.builder()
+                .roundId(redisState.getCurrentRound())
+                .drawer(drawer.getNickname())
+                .drawingData(request.getDrawingData())
+                .containsText(containsKeyword)
+                .containsKeyword(containsKeyword)
+                .build();
+
+        webSocketService.broadcastDrawing(gameCode, drawingMessage);
+
         log.info("Drawing submitted by {} for word '{}'. Penalty: {}",
                 drawer.getNickname(), request.getSelectedWord(), penalty);
 
@@ -652,6 +683,16 @@ public class GameService {
         // Save to Redis
         redisTemplate.opsForValue().set(redisKey, redisState, 2, TimeUnit.HOURS);
 
+        // Broadcast guess to all players
+        GuessSubmittedMessageDto guessMessage = GuessSubmittedMessageDto.builder()
+                .roundId(redisState.getCurrentRound())
+                .playerNickname(guesser.getNickname())
+                .guess(request.getGuess())
+                .isCorrect(isCorrect)
+                .pointsEarned(pointsEarned)
+                .build();
+
+
         log.info("Guess submitted by {}: '{}' - Correct: {}, Points: {}",
                 guesser.getNickname(), request.getGuess(), isCorrect, pointsEarned);
 
@@ -688,6 +729,18 @@ public class GameService {
                 .build();
 
         redisState.getRounds().add(newRound);
+
+        // Broadcast next round
+        GameStateMessageDto nextRoundMessage = GameStateMessageDto.builder()
+                .type("NEXT_ROUND")
+                .gameCode(redisState.getGameCode())
+                .currentRound(redisState.getCurrentRound() + 1)
+                .maxRounds(redisState.getMaxRounds())
+                .currentDrawer(nextDrawer.getNickname())
+                .status(GameStatus.IN_PROGRESS)
+                .build();
+
+        webSocketService.broadcastGameState(redisState.getGameCode(), nextRoundMessage);
 
         log.info("Started round {}. Next drawer: {}", nextRound, nextDrawer.getNickname());
     }
@@ -740,6 +793,17 @@ public class GameService {
                 guestPlayerRepository.save(dbPlayer);
             }
         }
+
+        // Broadcast game finished
+        GameStateMessageDto finishedMessage = GameStateMessageDto.builder()
+                .type("GAME_FINISHED")
+                .gameCode(gameCode)
+                .currentRound(redisState.getCurrentRound())
+                .maxRounds(redisState.getMaxRounds())
+                .status(GameStatus.FINISHED)
+                .build();
+
+        webSocketService.broadcastGameState(gameCode, finishedMessage);
 
         log.info("Game {} finished", gameCode);
     }
