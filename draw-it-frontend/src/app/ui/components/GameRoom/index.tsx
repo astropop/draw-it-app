@@ -3,10 +3,11 @@
 
 import { useWebSocket } from "@/app/hooks/useWebSocket";
 import { useMockWebSocket } from "@/app/hooks/useWebSocket.mock";
-import { gameApi } from "@/app/lib/api";
+
+import { startGame, submitDrawing, submitGuess } from "@/app/lib/api";
 import { GameResponseDTO, GameStatus } from "@/app/types/game.type";
 import { Card, CardContent, Container, Grid } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useReducer, useMemo, useState } from "react";
 import GameArea from "./GameArea";
 import Players from "./LeftPanel/Players";
 import StartButton from "./LeftPanel/StartButton";
@@ -14,6 +15,7 @@ import Timer from "./LeftPanel/Timer";
 import Guesses from "./RightPanel/Guesses";
 import Instructions from "./RightPanel/Instructions";
 import RoomHeader from "./RoomHeader";
+import useTimer, { TimerType } from "@/app/hooks/useTimer";
 
 interface GameRoomProps {
   gameData: GameResponseDTO;
@@ -35,22 +37,76 @@ export default function GameRoom({ gameData }: GameRoomProps) {
   };
 
   // State management
-  const [currentSessionId, setCurrentSessionId] = useState<string>("");
-  const [currentNickname, setCurrentNickname] = useState<string>("");
-  const [isHost, setIsHost] = useState(false);
-  const [selectedWord, setSelectedWord] = useState<string>("");
-  const [guess, setGuess] = useState<string>("");
-  const [showWarning, setShowWarning] = useState(false);
-  const [warningMessage, setWarningMessage] = useState("");
+  // Replace many small useState with refs/reducer and a timer hook
+  const currentSessionIdRef = useRef<string>("");
+  const currentNicknameRef = useRef<string>("");
+
+  // Local game state (kept) — updated from WS
   const [localGameState, setLocalGameState] =
     useState<GameResponseDTO>(initialGameState);
-  const [currentRoundId, setCurrentRoundId] = useState<number | null>(null);
-  const [isMyTurn, setIsMyTurn] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number>(0);
-  const [timerType, setTimerType] = useState<"drawing" | "guessing" | null>(
-    null
-  );
-  const [roundComplete, setRoundComplete] = useState(false);
+
+  // UI reducer to group related UI state
+  type UIState = {
+    selectedWord: string;
+    guess: string;
+    showWarning: boolean;
+    warningMessage: string;
+    currentRoundId: number | null;
+    roundComplete: boolean;
+  };
+
+  const initialUIState: UIState = {
+    selectedWord: "",
+    guess: "",
+    showWarning: false,
+    warningMessage: "",
+    currentRoundId: null,
+    roundComplete: false,
+  };
+
+  type UIAction =
+    | { type: "SELECT_WORD"; payload: string }
+    | { type: "SET_GUESS"; payload: string }
+    | { type: "SHOW_WARNING"; payload?: string }
+    | { type: "CLEAR_WARNING" }
+    | { type: "SET_ROUND_COMPLETE"; payload: boolean }
+    | { type: "SET_ROUND_ID"; payload: number | null }
+    | { type: "RESET_FOR_NEW_ROUND" };
+
+  function uiReducer(state: UIState, action: UIAction): UIState {
+    switch (action.type) {
+      case "SELECT_WORD":
+        return { ...state, selectedWord: action.payload };
+      case "SET_GUESS":
+        return { ...state, guess: action.payload };
+      case "SHOW_WARNING":
+        return {
+          ...state,
+          showWarning: true,
+          warningMessage: action.payload ?? "",
+        };
+      case "CLEAR_WARNING":
+        return { ...state, showWarning: false, warningMessage: "" };
+      case "SET_ROUND_COMPLETE":
+        return { ...state, roundComplete: action.payload };
+      case "SET_ROUND_ID":
+        return { ...state, currentRoundId: action.payload };
+      case "RESET_FOR_NEW_ROUND":
+        return {
+          ...state,
+          selectedWord: "",
+          guess: "",
+          showWarning: false,
+          warningMessage: "",
+          roundComplete: false,
+        };
+      default:
+        return state;
+    }
+  }
+
+  const [uiState, dispatchUI] = useReducer(uiReducer, initialUIState);
+
   const websocketHook = USE_MOCK ? useMockWebSocket : useWebSocket;
   // WebSocket connection
   const {
@@ -63,13 +119,58 @@ export default function GameRoom({ gameData }: GameRoomProps) {
     sendDrawing,
   } = websocketHook(gameData.gameCode);
 
+  // derive host from gameData or players list
+  const isHost = useMemo(() => {
+    if (gameData.isHost !== undefined) return gameData.isHost;
+    const sid = currentSessionIdRef.current;
+    if (!sid) return false;
+    const fromPlayers = players.find((p) => p.sessionId === sid);
+    if (fromPlayers) return fromPlayers.isHost ?? false;
+    const fromGame = gameData.players?.find((p) => p.sessionId === sid);
+    return fromGame?.isHost ?? false;
+  }, [gameData.isHost, players, gameData.players]);
+
+  const isMyTurn = useMemo(() => {
+    return (
+      localGameState.status === GameStatus.IN_PROGRESS &&
+      localGameState.currentDrawerSessionId === currentSessionIdRef.current
+    );
+  }, [localGameState.status, localGameState.currentDrawerSessionId]);
+
+  // timer hook — centralize timer logic
+  const onTimerExpire = (type: TimerType) => {
+    if (type === "drawing") {
+      if (uiState.selectedWord && isMyTurn) {
+        const canvas = document.querySelector("canvas");
+        if (canvas) {
+          const imageData = (canvas as HTMLCanvasElement).toDataURL(
+            "image/png"
+          );
+          void handleSubmitDrawing(imageData);
+        }
+      }
+    } else if (type === "guessing") {
+      if (!uiState.roundComplete && uiState.guess.trim()) {
+        void handleSubmitGuess();
+      }
+    }
+  };
+
+  const {
+    timeLeft,
+    running,
+    start: startTimer,
+    stop: stopTimer,
+    currentType,
+  } = useTimer(onTimerExpire);
+
   // Initialize session from localStorage
   useEffect(() => {
     const sessionId = localStorage.getItem("sessionId") || gameData.sessionId;
     const nickname = localStorage.getItem("nickname") || "";
 
-    setCurrentSessionId(sessionId);
-    setCurrentNickname(nickname);
+    currentSessionIdRef.current = sessionId;
+    currentNicknameRef.current = nickname;
     setLocalGameState(initialGameState);
 
     console.log("GameRoom initialized:", {
@@ -81,111 +182,64 @@ export default function GameRoom({ gameData }: GameRoomProps) {
     });
   }, [gameData]);
 
-  // Check if current user is host
-  useEffect(() => {
-    // Use gameData.isHost if available
-    if (gameData.isHost !== undefined) {
-      setIsHost(gameData.isHost);
-      return;
-    }
-
-    // Fallback: check from players list
-    if (players.length > 0 && currentSessionId) {
-      const currentPlayer = players.find(
-        (p) => p.sessionId === currentSessionId
-      );
-      setIsHost(currentPlayer?.isHost ?? false);
-    } else if (gameData.players?.length > 0 && currentSessionId) {
-      const currentPlayer = gameData.players.find(
-        (p) => p.sessionId === currentSessionId
-      );
-      setIsHost(currentPlayer?.isHost ?? false);
-    }
-  }, [players, currentSessionId, gameData.isHost, gameData.players]);
-
-  // Determine whose turn it is
-  useEffect(() => {
-    if (localGameState.status === GameStatus.IN_PROGRESS) {
-      const myTurn = localGameState.currentDrawerSessionId === currentSessionId;
-      setIsMyTurn(myTurn);
-    }
-  }, [
-    localGameState.status,
-    localGameState.currentDrawerSessionId,
-    currentSessionId,
-  ]);
-
   // Update game state from WebSocket
   useEffect(() => {
+    // gameState from websocket, check and update in realtime
     if (gameState) {
       setLocalGameState((prev) => ({
-        ...prev,
-        status: gameState.status || prev.status,
-        currentRound: gameState.currentRound || prev.currentRound,
-        maxRounds: gameState.maxRounds || prev.maxRounds,
+        ...prev, // rest of previous state
+        status: gameState.status || prev.status, // new status from response of WS
+        currentRound: gameState.currentRound || prev.currentRound, // new round from response of WS
+        // maxRounds: gameState.maxRounds || prev.maxRounds, // usually not changing
       }));
 
       if (
         gameState.type === "GAME_STARTED" ||
         gameState.type === "NEXT_ROUND"
       ) {
-        setSelectedWord("");
-        setGuess("");
-        setShowWarning(false);
-        setRoundComplete(false);
+        dispatchUI({ type: "RESET_FOR_NEW_ROUND" });
+        dispatchUI({
+          type: "SET_ROUND_ID",
+          payload: gameState.currentRound ?? 1,
+        });
 
-        const myTurn = gameState.currentDrawer === currentNickname;
-        setIsMyTurn(myTurn);
+        const myTurn = gameState.currentDrawer === currentNicknameRef.current;
 
         if (myTurn) {
-          setTimerType("drawing");
-          setTimeLeft(localGameState.drawingTime ?? DEFAULT_DRAWING_TIME);
+          startTimer(
+            "drawing",
+            localGameState.drawingTime ?? DEFAULT_DRAWING_TIME
+          );
+        } else {
+          // ensure timer stopped for others
+          stopTimer();
         }
       } else if (gameState.type === "GAME_FINISHED") {
         alert("Game finished! Check the results.");
         window.location.href = `/spectate/${gameData.gameCode}`;
       }
     }
-  }, [
-    gameState,
-    currentNickname,
-    localGameState.drawingTime,
-    gameData.gameCode,
-  ]);
-
-  // Timer countdown
-  useEffect(() => {
-    if (timeLeft > 0 && timerType) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            if (timerType === "drawing" && selectedWord && isMyTurn) {
-              handleAutoSubmitDrawing();
-            } else if (timerType === "guessing" && !roundComplete) {
-              handleAutoSubmitGuess();
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-  }, [timeLeft, timerType, selectedWord, isMyTurn, roundComplete]);
+  }, [gameState, localGameState.drawingTime, gameData.gameCode]);
 
   // Start guessing timer when drawing is submitted
   useEffect(() => {
-    if (currentDrawing && !isMyTurn && !roundComplete) {
-      setTimerType("guessing");
-      setTimeLeft(localGameState.guessingTime ?? DEFAULT_GUESSING_TIME);
+    if (currentDrawing && !isMyTurn && !uiState.roundComplete) {
+      startTimer(
+        "guessing",
+        localGameState.guessingTime ?? DEFAULT_GUESSING_TIME
+      );
     }
-  }, [currentDrawing, isMyTurn, localGameState.guessingTime, roundComplete]);
+  }, [
+    currentDrawing,
+    isMyTurn,
+    localGameState.guessingTime,
+    uiState.roundComplete,
+  ]);
 
   // Handle functions
   const handleStartGame = async () => {
     try {
-      await gameApi.startGame(gameData.gameCode);
+      await startGame(gameData.gameCode);
       console.log("Game started");
     } catch (error) {
       console.error("Failed to start game:", error);
@@ -194,33 +248,29 @@ export default function GameRoom({ gameData }: GameRoomProps) {
   };
 
   const handleWordSelect = (word: string) => {
-    setSelectedWord(word);
+    dispatchUI({ type: "SELECT_WORD", payload: word });
     console.log("Word selected:", word);
   };
 
   const handleSubmitDrawing = async (imageData: string) => {
-    if (!selectedWord) {
+    if (!uiState.selectedWord) {
       alert("Please select a word first!");
       return;
     }
 
     try {
-      const response = await gameApi.submitDrawing({
-        roundId: currentRoundId ?? 1, // Mock round ID
+      const response = await submitDrawing({
+        roundId: uiState.currentRoundId ?? 1,
         drawingData: imageData,
-        selectedWord: selectedWord,
+        selectedWord: uiState.selectedWord,
       });
 
-      if (response.containsKeyword) {
-        setShowWarning(true);
-        setWarningMessage(
-          response.warning || "Your drawing contains the keyword text!"
-        );
+      if (response?.containsKeyword) {
+        dispatchUI({ type: "SHOW_WARNING", payload: response.warning });
       }
 
       sendDrawing(imageData);
-      setTimerType(null);
-      setTimeLeft(0);
+      stopTimer();
       console.log("Drawing submitted");
     } catch (error) {
       console.error("Failed to submit drawing:", error);
@@ -231,28 +281,27 @@ export default function GameRoom({ gameData }: GameRoomProps) {
   const handleAutoSubmitDrawing = () => {
     const canvas = document.querySelector("canvas");
     if (canvas) {
-      const imageData = canvas.toDataURL("image/png");
-      handleSubmitDrawing(imageData);
+      const imageData = (canvas as HTMLCanvasElement).toDataURL("image/png");
+      void handleSubmitDrawing(imageData);
     }
   };
 
   const handleSubmitGuess = async () => {
-    if (!guess.trim()) {
+    if (!uiState.guess.trim()) {
       alert("Please enter your guess!");
       return;
     }
 
     try {
-      await gameApi.submitGuess({
-        roundId: currentRoundId ?? 1,
-        guess: guess.trim(),
+      await submitGuess({
+        roundId: uiState.currentRoundId ?? 1,
+        guess: uiState.guess.trim(),
       });
 
-      setGuess("");
-      setRoundComplete(true);
-      setTimerType(null);
-      setTimeLeft(0);
-      console.log("Guess submitted:", guess);
+      dispatchUI({ type: "SET_GUESS", payload: "" });
+      dispatchUI({ type: "SET_ROUND_COMPLETE", payload: true });
+      stopTimer();
+      console.log("Guess submitted:", uiState.guess);
     } catch (error) {
       console.error("Failed to submit guess:", error);
       alert("Failed to submit guess. Please try again.");
@@ -260,8 +309,8 @@ export default function GameRoom({ gameData }: GameRoomProps) {
   };
 
   const handleAutoSubmitGuess = () => {
-    if (guess.trim()) {
-      handleSubmitGuess();
+    if (uiState.guess.trim()) {
+      void handleSubmitGuess();
     }
   };
 
@@ -279,7 +328,13 @@ export default function GameRoom({ gameData }: GameRoomProps) {
     <Container maxWidth='xl' sx={{ py: 3 }}>
       {/* Header */}
       <RoomHeader
-        props={{ gameData, localGameState, currentNickname, isHost }}
+        props={{
+          gameData,
+          localGameState,
+          currentNickname: currentNicknameRef.current,
+          isHost,
+          connected,
+        }}
       />
 
       {/* Main Content */}
@@ -296,7 +351,7 @@ export default function GameRoom({ gameData }: GameRoomProps) {
                   isHost,
                   handleKick,
                   isMyTurn,
-                  currentSessionId,
+                  currentSessionId: currentSessionIdRef.current,
                 }}
               />
 
@@ -308,8 +363,10 @@ export default function GameRoom({ gameData }: GameRoomProps) {
           </Card>
 
           {/* Timer */}
-          {timerType && timeLeft > 0 && (
-            <Timer props={{ timerType, timeLeft, localGameState }} />
+          {currentType && timeLeft > 0 && (
+            <Timer
+              props={{ timerType: currentType, timeLeft, localGameState }}
+            />
           )}
         </Grid>
 
@@ -334,16 +391,17 @@ export default function GameRoom({ gameData }: GameRoomProps) {
               props={{
                 inprogprops: {
                   isMyTurn,
-                  selectedWord,
+                  selectedWord: uiState.selectedWord,
                   localGameState,
                   handleWordSelect,
                   currentDrawing,
-                  roundComplete,
-                  showWarning,
-                  warningMessage,
+                  roundComplete: uiState.roundComplete,
+                  showWarning: uiState.showWarning,
+                  warningMessage: uiState.warningMessage,
                   handleSubmitDrawing,
-                  guess,
-                  setGuess,
+                  guess: uiState.guess,
+                  setGuess: (v: string) =>
+                    dispatchUI({ type: "SET_GUESS", payload: v }),
                   handleSubmitGuess,
                 },
               }}

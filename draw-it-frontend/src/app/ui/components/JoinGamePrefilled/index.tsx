@@ -1,7 +1,7 @@
 // app/components/JoinGameFormPrefilled.tsx
 "use client";
 
-import { gameApi } from "@/app/lib/api";
+import { joinGame } from "@/app/lib/api";
 import {
   JoinGameFormPrefilledProps,
   JoinGamePrefilledInput,
@@ -45,7 +45,7 @@ export default function JoinGameFormPrefilled({
 
   const onSubmit = async (data: JoinGamePrefilledInput) => {
     try {
-      const response = await gameApi.joinGame(data);
+      const response = await joinGame(data);
 
       localStorage.setItem("sessionId", response.sessionId);
       localStorage.setItem("gameCode", response.gameCode);

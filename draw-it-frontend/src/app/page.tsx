@@ -1,4 +1,4 @@
-import { gameApi } from "./lib/api";
+import { getGameList } from "./lib/api";
 import { mockGamesLobby } from "./mock/mockdata.unified";
 import styles from "./page.module.css";
 import GameLobby from "./ui/components/GameLobby";
@@ -11,7 +11,7 @@ const getGames = async () => {
     return mockGamesLobby;
   }
   // return arrLocal;
-  const response = await gameApi.getGameList();
+  const response = await getGameList();
 
   if (!response) {
     return [];

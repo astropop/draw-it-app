@@ -1,7 +1,7 @@
 // GameLobby
 "use client";
 
-import { gameApi } from "@/app/lib/api";
+import { getGameList } from "@/app/lib/api";
 import { GameItemList } from "@/app/types/game.type";
 import { Box, Button, Container, Grid, Typography } from "@mui/material";
 import Link from "next/link";
@@ -19,15 +19,15 @@ export default function GameLobby({
   const [games, setGames] = useState<GameItemList[]>(initialGames);
   const router = useRouter();
 
-  useEffect(() => {
-    // Poll for updates every 5 seconds
-    const interval = setInterval(async () => {
-      const updatedGames = await gameApi.getGameList();
-      setGames(updatedGames);
-    }, 5000);
+  // useEffect(() => {
+  //   // Poll for updates every 5 seconds
+  //   const interval = setInterval(async () => {
+  //     const updatedGames = await getGameList();
+  //     setGames(updatedGames);
+  //   }, 5000);
 
-    return () => clearInterval(interval);
-  }, []);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

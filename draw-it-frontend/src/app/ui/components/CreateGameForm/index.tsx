@@ -1,7 +1,7 @@
 // app/components/CreateGameForm.tsx
 "use client";
 
-import { gameApi } from "@/app/lib/api";
+import { createGame } from "@/app/lib/api";
 import { CreateGameInput, createGameSchema } from "@/app/lib/validation";
 import { GameMode } from "@/app/types/game.type";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,7 +54,7 @@ export default function CreateGameForm() {
 
     try {
       // Call API
-      const response = await gameApi.createGame(data);
+      const response = await createGame(data);
 
       // Save to localStorage for rejoin
       localStorage.setItem("sessionId", response.sessionId);
@@ -66,6 +66,7 @@ export default function CreateGameForm() {
       // Redirect to game room
       router.push(`/game/${response.gameCode}`);
     } catch (error) {
+      console.log("Create game error:", error);
       setError("root", {
         message:
           error instanceof Error ? error.message : "Failed to create game",

@@ -1,3 +1,4 @@
+"use client";
 import { GameResponseDTO, GameStatus, PlayerDTO } from "@/app/types/game.type";
 import {
   Box,

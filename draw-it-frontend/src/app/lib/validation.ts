@@ -26,9 +26,9 @@ export type CreateGameInput = z.infer<typeof createGameSchema>;
 export const joinGameSchema = z.object({
   gameCode: z
     .string()
-    .min(8, "Game code must be 8 characters")
-    .max(8, "Game code must be 8 characters")
-    .regex(/^[A-Z0-9]+$/, "Game code must contain only letters and numbers"),
+    .min(1, "Game code must be 8 characters")
+    .max(10, "Game code must be 8 characters")
+    .regex(/^[A-Za-z0-9]+$/, "Game code must contain only letters and numbers"),
   nickname: z
     .string()
     .min(1, "Nickname is required")

@@ -3,7 +3,6 @@
 
 import { Client, IMessage } from "@stomp/stompjs";
 import { useCallback, useEffect, useRef, useState } from "react";
-import SockJS from "sockjs-client";
 import {
   GameStateMessage,
   GuessSubmittedMessage,
@@ -13,11 +12,6 @@ import {
   PlayerUpdateMessage,
   PlayerListUpdate,
 } from "../types/game.type";
-
-// export interface WebSocketMessage {
-//   type: string;
-//   data: any;
-// }
 
 export function useWebSocket(gameCode: string | null) {
   const [connected, setConnected] = useState(false);
@@ -30,8 +24,11 @@ export function useWebSocket(gameCode: string | null) {
   useEffect(() => {
     if (!gameCode) return;
 
-    const socket = new SockJS(process.env.NEXT_PUBLIC_WS_URL!);
-
+    const socketURL = process.env.NEXT_PUBLIC_WS_URL;
+    if (!socketURL) {
+      console.error("NEXT_PUBLIC_WS_URL is not defined");
+      return;
+    }
     const handlePlayerUpdate = (
       data: PlayerUpdateMessage | PlayerListUpdate
     ) => {
@@ -87,65 +84,78 @@ export function useWebSocket(gameCode: string | null) {
       alert(`You have been kicked: ${data.reason}`);
       window.location.href = "/";
     };
-
+    // config stomp client
     const stompClient = new Client({
-      webSocketFactory: () => socket as WebSocket,
-      onConnect: () => {
-        console.log("WebSocket connected");
-        setConnected(true);
+      brokerURL: socketURL,
+      // connectHeaders: {
 
-        // Subscribe to player updates
-        stompClient.subscribe(
-          `/topic/game/${gameCode}/players`,
-          (message: IMessage) => {
-            const data: PlayerUpdateMessage | PlayerListUpdate = JSON.parse(
-              message.body
-            );
-            handlePlayerUpdate(data);
-          }
-        );
-
-        // Subscribe to drawing updates
-        stompClient.subscribe(
-          `/topic/game/${gameCode}/drawing`,
-          (message: IMessage) => {
-            const data: DrawingSubmittedMessage = JSON.parse(message.body);
-            handleDrawingUpdate(data);
-          }
-        );
-
-        // Subscribe to guess updates
-        stompClient.subscribe(
-          `/topic/game/${gameCode}/guess`,
-          (message: IMessage) => {
-            const data: GuessSubmittedMessage = JSON.parse(message.body);
-            handleGuessUpdate(data);
-          }
-        );
-
-        // Subscribe to game state changes
-        stompClient.subscribe(
-          `/topic/game/${gameCode}/state`,
-          (message: IMessage) => {
-            const data: GameStateMessage = JSON.parse(message.body);
-            handleGameStateChange(data);
-          }
-        );
-
-        // Subscribe to personal kick notifications
-        stompClient.subscribe(`/user/queue/kick`, (message: IMessage) => {
-          const data: KickPlayerResponse = JSON.parse(message.body);
-          handleKicked(data);
-        });
+      // },
+      debug: function (str) {
+        console.log(str);
       },
-      onDisconnect: () => {
-        console.log("WebSocket disconnected");
-        setConnected(false);
-      },
-      onStompError: (frame) => {
-        console.error("STOMP error:", frame);
-      },
+      // reconnectDelay: 5000,
+      // heartbeatIncoming: 4000,
+      // heartbeatOutgoing: 4000,
     });
+
+    stompClient.onConnect = () => {
+      console.log("WebSocket connected");
+      setConnected(true);
+
+      // Subscribe to player updates
+      stompClient.subscribe(
+        `/topic/game/${gameCode}/players`,
+        (message: IMessage) => {
+          const data: PlayerUpdateMessage | PlayerListUpdate = JSON.parse(
+            message.body
+          );
+          handlePlayerUpdate(data);
+        }
+      );
+
+      // Subscribe to drawing updates
+      stompClient.subscribe(
+        `/topic/game/${gameCode}/drawing`,
+        (message: IMessage) => {
+          const data: DrawingSubmittedMessage = JSON.parse(message.body);
+          handleDrawingUpdate(data);
+        }
+      );
+
+      // Subscribe to guess updates
+      stompClient.subscribe(
+        `/topic/game/${gameCode}/guess`,
+        (message: IMessage) => {
+          const data: GuessSubmittedMessage = JSON.parse(message.body);
+          handleGuessUpdate(data);
+        }
+      );
+
+      // Subscribe to game state changes
+      stompClient.subscribe(
+        `/topic/game/${gameCode}/state`,
+        (message: IMessage) => {
+          const data: GameStateMessage = JSON.parse(message.body);
+          handleGameStateChange(data);
+        }
+      );
+
+      // Subscribe to personal kick notifications
+      stompClient.subscribe(`/user/queue/kick`, (message: IMessage) => {
+        const data: KickPlayerResponse = JSON.parse(message.body);
+        handleKicked(data);
+      });
+    };
+
+    stompClient.onDisconnect = () => {
+      console.log("WebSocket disconnected");
+      setConnected(false);
+    };
+
+    stompClient.onStompError = (frame) => {
+      console.log("Broker reported error: " + frame.headers["message"]);
+      console.log("Additional details: " + frame.body);
+    };
 
     stompClient.activate();
     clientRef.current = stompClient;
@@ -158,10 +168,15 @@ export function useWebSocket(gameCode: string | null) {
   const kickPlayer = useCallback(
     (targetSessionId: string) => {
       if (clientRef.current?.connected) {
+        const mySessionId = localStorage.getItem("sessionId") || "";
         clientRef.current.publish({
           destination: `/app/game/${gameCode}/kick`,
-          body: JSON.stringify({ targetSessionId }),
+          body: JSON.stringify({ targetSessionId }), // player to be kicked
+          headers: {
+            "x-player-session-id": mySessionId, // player pressed the kick
+          },
         });
+        console.log(`Player: ${mySessionId} kicks ${targetSessionId}`);
       }
     },
     [gameCode]

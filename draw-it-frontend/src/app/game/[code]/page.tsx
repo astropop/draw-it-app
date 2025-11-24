@@ -1,7 +1,8 @@
-import { gameApi } from "@/app/lib/api";
+import { getGame } from "@/app/lib/api";
 import { getMockGameByCode } from "@/app/mock/mockdata.unified";
 import GameRoom from "@/app/ui/components/GameRoom";
 import { Metadata } from "next";
+import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -52,7 +53,10 @@ async function getGameData(code: string) {
     notFound();
   }
 
-  const response = await gameApi.getGame(code);
+  const cookieStore = await cookies();
+  const playerSessionId = cookieStore.get("sessionId")?.value;
+
+  const response = await getGame(code, playerSessionId);
 
   if (!response) {
     notFound();
@@ -78,5 +82,5 @@ export default async function GamePage({
 }
 
 export const metadata: Metadata = {
-  title: "Draw-it - Create Game",
+  title: "Draw-it - Play Game",
 };

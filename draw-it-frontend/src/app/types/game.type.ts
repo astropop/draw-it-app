@@ -12,10 +12,10 @@ export enum GameMode {
   VERSUS = "VERSUS",
 }
 
-export enum TurnMode {
-  SEQUENTIAL = "SEQUENTIAL",
-  RANDOM = "RANDOM",
-}
+// export enum TurnMode {
+//   SEQUENTIAL = "SEQUENTIAL",
+//   RANDOM = "RANDOM",
+// }
 
 // Player Types
 export interface PlayerDTO {
@@ -48,7 +48,7 @@ export interface Game {
   currentRound: number;
   drawingTime: number;
   guessingTime: number;
-  turnMode: TurnMode;
+  // turnMode: TurnMode;
   hostId: number;
   createdAt: string;
   startedAt?: string;

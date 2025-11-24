@@ -1,3 +1,5 @@
+"use server";
+import { cookies } from "next/headers";
 import { getMockGameByCode, mockGamesLobby } from "../mock/mockdata.unified";
 import {
   CreateGameRequest,
@@ -9,7 +11,7 @@ import {
   SubmitDrawingResponse,
   SubmitGuessRequest,
 } from "../types/game.type";
-import { mockApiResponses, isUseMockApi } from "./mockApi";
+import { isUseMockApi, mockApiResponses } from "./mockApi";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -18,7 +20,7 @@ export async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  console.log("API_URL", API_URL, endpoint);
+  console.log("Test-API_URL", API_URL, endpoint);
 
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -42,102 +44,135 @@ export async function fetchApi<T>(
   return await response.json();
 }
 
-export const gameApi = {
-  //CreateGameRequest
-  createGame: async (data: CreateGameRequest): Promise<GameResponseDTO> => {
-    // Use mock if enabled
-    if (isUseMockApi()) {
-      return new Promise((resolve) => {
-        resolve(mockApiResponses.createGame(data));
-      });
-    }
-
-    return await fetchApi<GameResponseDTO>("/api/games/create", {
-      method: "POST",
-      body: JSON.stringify(data),
+//CreateGameRequest
+export const createGame = async (
+  data: CreateGameRequest
+): Promise<GameResponseDTO> => {
+  // Use mock if enabled
+  if (isUseMockApi()) {
+    return new Promise((resolve) => {
+      resolve(mockApiResponses.createGame(data));
     });
-  },
+  }
+  console.log("API createGame called with data:", data);
 
-  // JoinGameRequest
-  joinGame: async (data: JoinGameRequest): Promise<GameResponseDTO> => {
-    // Use mock if enabled
-    if (isUseMockApi()) {
-      return new Promise((resolve) => {
-        resolve(mockApiResponses.joinGame(data));
-      });
-    }
-    return await fetchApi("/api/games/join", {
-      method: "POST",
-      body: JSON.stringify(data),
+  const result = await fetchApi<GameResponseDTO>("/api/games/create", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  // set cookies
+  if (result) {
+    const cookiesStore = await cookies();
+    cookiesStore.set("sessionId", result.sessionId);
+    cookiesStore.set("gameCode", result.gameCode);
+    cookiesStore.set("nickname", data.hostNickname);
+    cookiesStore.set("lastGame", result.gameCode);
+    cookiesStore.set("lastNickname", data.hostNickname);
+  }
+  return result;
+};
+
+// JoinGameRequest
+export const joinGame = async (
+  data: JoinGameRequest
+): Promise<GameResponseDTO> => {
+  // Use mock if enabled
+  if (isUseMockApi()) {
+    return new Promise((resolve) => {
+      resolve(mockApiResponses.joinGame(data));
     });
-  },
+  }
+  const result = await fetchApi<GameResponseDTO>("/api/games/join", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 
-  startGame: async (gameCode: string): Promise<void> => {
-    // UseMock
-    if (isUseMockApi()) {
-      return new Promise((resolve) => {
-        console.log("Mock: Game started", gameCode);
-        resolve();
-      });
-    }
+  // set cookies
+  if (result) {
+    const cookiesStore = await cookies();
+    cookiesStore.set("sessionId", result.sessionId);
+    cookiesStore.set("gameCode", result.gameCode);
+    cookiesStore.set("nickname", data.nickname);
+    cookiesStore.set("lastGame", result.gameCode);
+    cookiesStore.set("lastNickname", data.nickname);
+  }
+  return result;
+};
 
-    return await fetchApi(`/api/games/${gameCode}/start`, {
-      method: "POST",
+export const startGame = async (gameCode: string): Promise<void> => {
+  // UseMock
+  if (isUseMockApi()) {
+    return new Promise((resolve) => {
+      console.log("Mock: Game started", gameCode);
+      resolve();
     });
-  },
+  }
 
-  //SubmitDrawingRequest
-  submitDrawing: async (
-    data: SubmitDrawingRequest
-  ): Promise<SubmitDrawingResponse> => {
-    // UseMock
-    if (isUseMockApi()) {
-      return new Promise((resolve) => {
-        resolve(mockApiResponses.submitDrawing());
-      });
-    }
+  return await fetchApi(`/api/games/${gameCode}/start`, {
+    method: "POST",
+  });
+};
 
-    return await fetchApi("/api/games/submit-drawing", {
-      method: "POST",
-      body: JSON.stringify(data),
+//SubmitDrawingRequest
+export const submitDrawing = async (
+  data: SubmitDrawingRequest
+): Promise<SubmitDrawingResponse> => {
+  // UseMock
+  if (isUseMockApi()) {
+    return new Promise((resolve) => {
+      resolve(mockApiResponses.submitDrawing());
     });
-  },
+  }
 
-  //SubmitGuessRequest
-  submitGuess: async (data: SubmitGuessRequest): Promise<void> => {
-    //usemock
-    if (isUseMockApi()) {
-      return new Promise((resolve) => {
-        console.log("Mock: Guess ok", data);
-        resolve();
-      });
-    }
-    return await fetchApi("/api/games/submit-guess", {
-      method: "POST",
-      body: JSON.stringify(data),
+  return await fetchApi("/api/games/submit-drawing", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+};
+
+//SubmitGuessRequest
+export const submitGuess = async (data: SubmitGuessRequest): Promise<void> => {
+  //usemock
+  if (isUseMockApi()) {
+    return new Promise((resolve) => {
+      console.log("Mock: Guess ok", data);
+      resolve();
     });
-  },
+  }
+  return await fetchApi("/api/games/submit-guess", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+};
 
-  // Get Game list
-  getGameList: async (): Promise<GameItemList[]> => {
-    if (isUseMockApi()) {
-      return new Promise((resolve) => {
-        resolve(mockGamesLobby);
-      });
-    }
-    return await fetchApi("/api/games/list", { method: "GET" });
-  },
+// Get Game list
+export const getGameList = async (): Promise<GameItemList[]> => {
+  if (isUseMockApi()) {
+    return new Promise((resolve) => {
+      resolve(mockGamesLobby);
+    });
+  }
+  return await fetchApi("/api/games/list", { method: "GET" });
+};
 
-  spectateGame: async (gameCode: string): Promise<GameSpectatorDTO> => {
-    if (isUseMockApi()) {
-      return new Promise((resolve) => {
-        resolve(getMockGameByCode(gameCode).spectator);
-      });
-    }
-    return await fetchApi(`/api/games/${gameCode}/spectate`, { method: "GET" });
-  },
+export const spectateGame = async (
+  gameCode: string
+): Promise<GameSpectatorDTO> => {
+  if (isUseMockApi()) {
+    return new Promise((resolve) => {
+      resolve(getMockGameByCode(gameCode).spectator);
+    });
+  }
+  return await fetchApi(`/api/games/${gameCode}/spectate`, { method: "GET" });
+};
 
-  getGame: async (gameCode: string): Promise<GameResponseDTO> => {
-    return await fetchApi(`/api/games/${gameCode}`, { method: "GET" });
-  },
+export const getGame = async (
+  gameCode: string,
+  playerSessionId?: string
+): Promise<GameResponseDTO> => {
+  return await fetchApi(`/api/games/${gameCode}`, {
+    method: "POST",
+    body: JSON.stringify({ playerSessionId: playerSessionId }),
+  });
 };

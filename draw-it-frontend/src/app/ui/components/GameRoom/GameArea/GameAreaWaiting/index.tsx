@@ -1,3 +1,4 @@
+"use client";
 import { GameResponseDTO, PlayerDTO } from "@/app/types/game.type";
 import { Box, Typography } from "@mui/material";
 

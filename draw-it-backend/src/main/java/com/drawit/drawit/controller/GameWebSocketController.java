@@ -28,13 +28,14 @@ public class GameWebSocketController {
     @MessageMapping("/game/{gameCode}/kick")
     public void kickPlayer(
             @DestinationVariable String gameCode,
-            @Payload KickPlayerRequestDto request,
+            @Payload KickPlayerRequestDto body,
             SimpMessageHeaderAccessor headerAccessor
     ) {
-        String sessionId = getSessionId(headerAccessor);
-        log.info("Kick request from {} for target {}", sessionId, request.getTargetSessionId());
+        String playerSessionId = getCurrentSessionId(headerAccessor);
+        String targetSessionId = body.getTargetSessionId();
+        log.info("Host: {} kick player: {}", playerSessionId, targetSessionId);
 
-        webSocketService.kickPlayer(gameCode, sessionId, request.getTargetSessionId());
+        webSocketService.kickPlayer(gameCode, playerSessionId, targetSessionId);
     }
 
     /**
@@ -48,7 +49,7 @@ public class GameWebSocketController {
             @Payload DrawingSubmittedMessageDto message,
             SimpMessageHeaderAccessor headerAccessor
     ) {
-        String sessionId = getSessionId(headerAccessor);
+        String sessionId = getCurrentSessionId(headerAccessor);
         log.info("Drawing submitted by session {} in game {}", sessionId, gameCode);
 
         webSocketService.broadcastDrawing(gameCode, message);
@@ -57,8 +58,8 @@ public class GameWebSocketController {
     /**
      * Get session ID from WebSocket header
      */
-    private String getSessionId(SimpMessageHeaderAccessor headerAccessor) {
+    private String getCurrentSessionId(SimpMessageHeaderAccessor headerAccessor) {
         // Get HTTP session from WebSocket headers
-        return (String) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get("sessionId");
+        return Objects.requireNonNull(headerAccessor.getFirstNativeHeader("x-player-session-id"));
     }
 }

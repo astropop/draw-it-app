@@ -1,7 +1,7 @@
 // app/components/JoinGameForm.tsx
 "use client";
 
-import { gameApi } from "@/app/lib/api";
+import { joinGame } from "@/app/lib/api";
 import { JoinGameInput, joinGameSchema } from "@/app/lib/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ContentPasteGo } from "@mui/icons-material";
@@ -42,7 +42,7 @@ export default function JoinGameForm() {
   const onSubmit = async (data: JoinGameInput) => {
     try {
       // Call API
-      const response = await gameApi.joinGame(data);
+      const response = await joinGame(data);
 
       // Save to localStorage for rejoin
       localStorage.setItem("sessionId", response.sessionId);

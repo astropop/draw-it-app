@@ -1,12 +1,13 @@
+"use client";
 import { GameResponseDTO, GameStatus } from "@/app/types/game.type";
 import { Paper, Grid, Typography, Chip, Stack } from "@mui/material";
-import { connected } from "process";
 
 export type RoomHeaderProps = {
   gameData: GameResponseDTO;
   localGameState: GameResponseDTO;
   currentNickname: string;
   isHost: boolean;
+  connected: boolean;
 };
 
 const RoomHeader = ({ props }: { props: RoomHeaderProps }) => {
@@ -34,8 +35,8 @@ const RoomHeader = ({ props }: { props: RoomHeaderProps }) => {
               justifyContent={{ xs: "flex-start", md: "flex-end" }}
             >
               <Chip
-                label={connected ? "Connected" : "Disconnected"}
-                color={connected ? "success" : "error"}
+                label={props.connected ? "Connected" : "Disconnected"}
+                color={props.connected ? "success" : "error"}
                 size='small'
               />
               {props.localGameState.status === GameStatus.IN_PROGRESS && (

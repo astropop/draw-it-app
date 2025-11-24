@@ -3,7 +3,7 @@
 
 import { useWebSocket } from "@/app/hooks/useWebSocket";
 import { GameSpectatorDTO } from "@/app/types/game.type";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import FinishedSpectator from "./FinishedSpectator";
 import InProgressSpectator from "./InProgressSpectator";
 import WaitingSpectator from "./WaitingSpectator";
@@ -17,6 +17,22 @@ export default function GameSpectator({
   const { players, currentDrawing, guesses, gameState } = useWebSocket(
     initialData.gameCode
   );
+
+  useEffect(() => {
+    if (players.length > 0) {
+      setGameData((prev) => ({
+        ...prev, // rest of previous state
+        players:
+          players.length > 0 ? [...prev.players, ...players] : prev.players, // update players if available
+        // status: gameState.status || prev.status, // new status from response of WS
+        // currentRound: gameState.currentRound || prev.currentRound, // new round from response of WS
+        // maxRounds: gameState.maxRounds || prev.maxRounds, // usually not changing
+      }));
+    }
+    console.log("gameState", gameState);
+    console.log("players", players);
+    console.log("gameData", gameData);
+  }, [players, gameState, gameData]);
 
   if (gameData.status === "WAITING") {
     return <WaitingSpectator props={{ gameData }} />;

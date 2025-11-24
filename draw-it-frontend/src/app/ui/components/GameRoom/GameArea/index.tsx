@@ -1,3 +1,4 @@
+"use client";
 import { GameStatus } from "@/app/types/game.type";
 import { Card, CardContent } from "@mui/material";
 import GameAreaInProgress, {
