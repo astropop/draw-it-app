@@ -10,7 +10,7 @@ interface JoinByCodePageProps {
 
 export default async function JoinByCodePage({ params }: JoinByCodePageProps) {
   const { code } = await params;
-  const gameCode = code.toUpperCase();
+  const gameCode = code;
 
   return (
     <Container maxWidth='sm' sx={{ py: 4 }}>

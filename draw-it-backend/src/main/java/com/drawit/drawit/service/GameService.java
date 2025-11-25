@@ -2,7 +2,7 @@ package com.drawit.drawit.service;
 
 
 import com.drawit.drawit.dto.*;
-import com.drawit.drawit.dto.websocket.DrawingSubmittedMessageDto;
+import com.drawit.drawit.dto.websocket.DrawingSubmittedRequestDto;
 import com.drawit.drawit.dto.websocket.GameStateMessageDto;
 import com.drawit.drawit.dto.websocket.GuessSubmittedMessageDto;
 import com.drawit.drawit.entity.Game;
@@ -13,8 +13,6 @@ import com.drawit.drawit.repository.GameRepository;
 import com.drawit.drawit.repository.GuestPlayerRepository;
 import com.drawit.drawit.repository.WordCacheRepository;
 import com.drawit.drawit.util.GameCodeGenerator;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,14 +94,7 @@ public class GameService {
         game.setHostId(host.getId());
         game = gameRepository.save(game);
 
-        // Store session
-//        httpServletRequest.setAttribute("sessionId", host.getSessionId());
-//        httpServletRequest.setAttribute("gameCode", gameCode);
-//        httpServletRequest.setAttribute("nickname", host.getNickname());
-
         // Generate words using HuggingFace (or default)
-
-
         int wordCount = Math.max(request.getMaxRounds() + 2, 7);
         List<String> rawWords  = huggingFaceService.getOrCreateKeywords(request.getTheme(), wordCount);
         // convert to wordstatusdto
@@ -133,7 +124,6 @@ public class GameService {
         redisTemplate.opsForValue().set(redisKey, redisState, 2, TimeUnit.HOURS);
 
         log.info("Game created successfully: {}", gameCode);
-//        log.info("Game created successfullyRedis: {}", redisTemplate.opsForHash().;
 
         // Build response
         return GameResponseDto.builder()
@@ -201,8 +191,8 @@ public class GameService {
                 .map(WordStatusDto::getWord)
                 .collect(Collectors.toList());
 
-        // Broadcast player joined via WebSocket
-        webSocketService.broadcastPlayerJoined(request.getGameCode(), newPlayerDto);
+        // Broadcast players via WebSocket
+        webSocketService.broadcastPlayerList(request.getGameCode());
 
         return GameResponseDto.builder()
                 .gameId(game.getId())
@@ -439,7 +429,8 @@ public class GameService {
                 .status(GameStatus.IN_PROGRESS)
                 .build();
 
-        webSocketService.broadcastGameState(gameCode, stateMessage);
+        // Broardcast game
+//        webSocketService.broadcastGameState(gameCode, stateMessage);
 
         return GameResponseDto.builder()
                 .gameId(game.getId())
@@ -560,15 +551,15 @@ public class GameService {
         redisTemplate.opsForValue().set(redisKey, redisState, 2, TimeUnit.HOURS);
 
         // Broadcast drawing to all players
-        DrawingSubmittedMessageDto drawingMessage = DrawingSubmittedMessageDto.builder()
+        DrawingSubmittedRequestDto drawingMessage = DrawingSubmittedRequestDto.builder()
                 .roundId(redisState.getCurrentRound())
                 .drawer(drawer.getNickname())
                 .drawingData(request.getDrawingData())
                 .containsText(containsKeyword)
                 .containsKeyword(containsKeyword)
                 .build();
-
-        webSocketService.broadcastDrawing(gameCode, drawingMessage);
+// broadcast drawing
+//        webSocketService.broadcastDrawing(gameCode, drawingMessage);
 
         log.info("Drawing submitted by {} for word '{}'. Penalty: {}",
                 drawer.getNickname(), request.getSelectedWord(), penalty);
@@ -740,7 +731,8 @@ public class GameService {
                 .status(GameStatus.IN_PROGRESS)
                 .build();
 
-        webSocketService.broadcastGameState(redisState.getGameCode(), nextRoundMessage);
+        // Broardcast game
+//        webSocketService.broadcastGameState(redisState.getGameCode(), nextRoundMessage);
 
         log.info("Started round {}. Next drawer: {}", nextRound, nextDrawer.getNickname());
     }
@@ -803,7 +795,8 @@ public class GameService {
                 .status(GameStatus.FINISHED)
                 .build();
 
-        webSocketService.broadcastGameState(gameCode, finishedMessage);
+        // Broardcast game
+//        webSocketService.broadcastGameState(gameCode, finishedMessage);
 
         log.info("Game {} finished", gameCode);
     }

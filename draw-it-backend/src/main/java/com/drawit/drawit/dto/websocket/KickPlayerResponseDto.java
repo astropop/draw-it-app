@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class KickPlayerResponseDto {
+    private String targetSessionId; // who was kicked
     private Boolean kicked;
     private String reason;
     private String gameCode;

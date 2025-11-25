@@ -1,3 +1,4 @@
+"use client";
 import { GameSpectatorDTO } from "@/app/types/game.type";
 import {
   Box,

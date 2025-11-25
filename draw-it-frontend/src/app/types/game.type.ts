@@ -8,7 +8,7 @@ export enum GameStatus {
 }
 
 export enum GameMode {
-  MULTIPLAYER = "MULTIPLAYER",
+  // MULTIPLAYER = "MULTIPLAYER",
   VERSUS = "VERSUS",
 }
 
@@ -65,6 +65,7 @@ export interface GameListItemDTO {
   finishedAt?: string;
 }
 
+// main type when BE responds
 export interface GameResponseDTO {
   gameId: number;
   gameCode: string;
@@ -150,18 +151,19 @@ export interface KickPlayerRequest {
 }
 
 export interface KickPlayerResponse {
+  targetSessionId: string; // who was kicked
   kicked: boolean;
   reason: string;
   gameCode: string;
 }
 
 // WebSocket Message Types
-export interface PlayerUpdateMessage {
-  type: "PLAYER_JOINED" | "PLAYER_LEFT" | "SCORE_UPDATED";
-  nickname: string;
-  sessionId: string;
-  score?: number;
-}
+// export interface PlayerUpdateMessage {
+//   type: "PLAYER_JOINED" | "PLAYER_LEFT" | "SCORE_UPDATED";
+//   nickname: string;
+//   sessionId: string;
+//   score?: number;
+// }
 
 export interface PlayerListUpdate {
   players: PlayerDTO[];

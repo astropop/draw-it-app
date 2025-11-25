@@ -1,6 +1,7 @@
 package com.drawit.drawit.controller;
 
-import com.drawit.drawit.dto.websocket.DrawingSubmittedMessageDto;
+import com.drawit.drawit.dto.websocket.DrawingSubmittedRequestDto;
+import com.drawit.drawit.dto.websocket.GuessSubmittedRequestDto;
 import com.drawit.drawit.dto.websocket.KickPlayerRequestDto;
 import com.drawit.drawit.service.GameWebSocketService;
 import lombok.RequiredArgsConstructor;
@@ -46,14 +47,29 @@ public class GameWebSocketController {
     @MessageMapping("/game/{gameCode}/drawing-submitted")
     public void drawingSubmitted(
             @DestinationVariable String gameCode,
-            @Payload DrawingSubmittedMessageDto message,
+            @Payload DrawingSubmittedRequestDto body,
             SimpMessageHeaderAccessor headerAccessor
     ) {
         String sessionId = getCurrentSessionId(headerAccessor);
-        log.info("Drawing submitted by session {} in game {}", sessionId, gameCode);
+        Integer roundId = body.getRoundId();
+        log.info("Drawing submitted by session {} in game {}, in round {}", sessionId, gameCode, roundId);
 
-        webSocketService.broadcastDrawing(gameCode, message);
+        webSocketService.broadcastDrawing(gameCode, body);
     }
+
+//    @MessageMapping("/game/{gameCode}/guess-submitted")
+//    public void guessSubmitted(
+//            @DestinationVariable String gameCode,
+//            @Payload GuessSubmittedRequestDto body,
+//            SimpMessageHeaderAccessor accessor
+//    ) {
+//        String guesserSessionId = accessor.getFirstNativeHeader("x-player-session-id");
+//        Integer roundId = body.getRoundId();
+//
+//        log.info("Guess submitted: player={}, guess={}, game={}", guesserSessionId, body.getGuess());
+//
+//        webSocketService.handleGuessSubmitted(gameCode, guesserSessionId, body);
+//    }
 
     /**
      * Get session ID from WebSocket header

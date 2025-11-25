@@ -4,21 +4,20 @@
 import { Client, IMessage } from "@stomp/stompjs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  GameStateMessage,
-  GuessSubmittedMessage,
-  PlayerDTO,
-  DrawingSubmittedMessage,
   KickPlayerResponse,
-  PlayerUpdateMessage,
+  PlayerDTO,
   PlayerListUpdate,
 } from "../types/game.type";
 
-export function useWebSocket(gameCode: string | null) {
+export function useWebSocket(
+  gameCode: string | null,
+  currentSessionId?: string
+) {
   const [connected, setConnected] = useState(false);
+  const [kickedPlayer, setKickedPlayer] = useState<KickPlayerResponse | null>(
+    null
+  );
   const [players, setPlayers] = useState<PlayerDTO[]>([]);
-  const [gameState, setGameState] = useState<GameStateMessage | null>(null);
-  const [currentDrawing, setCurrentDrawing] = useState<string | null>(null);
-  const [guesses, setGuesses] = useState<GuessSubmittedMessage[]>([]);
   const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
@@ -29,122 +28,56 @@ export function useWebSocket(gameCode: string | null) {
       console.error("NEXT_PUBLIC_WS_URL is not defined");
       return;
     }
-    const handlePlayerUpdate = (
-      data: PlayerUpdateMessage | PlayerListUpdate
-    ) => {
-      if ("players" in data) {
-        // PlayerListUpdate
-        setPlayers(data.players);
-      } else if (data.type === "PLAYER_JOINED") {
-        // PlayerUpdateMessage
-        setPlayers((prev) => [
-          ...prev,
-          {
-            nickname: data.nickname,
-            sessionId: data.sessionId,
-            score: data.score || 0,
-            isHost: false,
-          },
-        ]);
-      }
-    };
 
-    const handleDrawingUpdate = (data: DrawingSubmittedMessage) => {
-      setCurrentDrawing(data.drawingData);
-      if (data.containsKeyword) {
-        alert(`WARNING: ${data.drawer}'s drawing contains keyword text!`);
-      }
-    };
-
-    const handleGuessUpdate = (data: GuessSubmittedMessage) => {
-      setGuesses((prev) => [...prev, data]);
-
-      // Update player score
-      setPlayers((prev) =>
-        prev.map((p) =>
-          p.nickname === data.playerNickname
-            ? { ...p, score: p.score + (data.pointsEarned || 0) }
-            : p
-        )
-      );
-    };
-
-    const handleGameStateChange = (data: GameStateMessage) => {
-      setGameState(data);
-
-      if (data.type === "NEXT_ROUND") {
-        setCurrentDrawing(null);
-        setGuesses([]);
-      } else if (data.type === "GAME_FINISHED") {
-        alert(" Game finished!");
-      }
-    };
-
+    // notify kicked player to all subscribers
     const handleKicked = (data: KickPlayerResponse) => {
-      alert(`You have been kicked: ${data.reason}`);
-      window.location.href = "/";
+      // setKickedPlayer(data);
+      // if current player is kicked, alert and redirect
+      if (data.targetSessionId === currentSessionId) {
+        alert(`You have been kicked from the game. Reason: ${data.reason}`);
+        // Optionally, redirect the user or perform other actions
+        window.location.href = "/"; // redirect to home or another page
+      }
     };
+
+    // return new player list to all subscribers
+    const handlePlayerUpdate = (data: PlayerListUpdate) => {
+      setPlayers(data.players);
+    };
+
     // config stomp client
     const stompClient = new Client({
       brokerURL: socketURL,
-      // connectHeaders: {
-
-      // },
       debug: function (str) {
         console.log(str);
       },
-      // reconnectDelay: 5000,
-      // heartbeatIncoming: 4000,
-      // heartbeatOutgoing: 4000,
     });
 
     stompClient.onConnect = () => {
       console.log("WebSocket connected");
       setConnected(true);
 
+      // Subscribe to personal kick notifications
+      stompClient.subscribe(`/queue/kick`, (message: IMessage) => {
+        const data: KickPlayerResponse = JSON.parse(message.body); // dto with new player list
+        console.log("log-/queue/kick", data, message.body, currentSessionId);
+        handleKicked(data);
+      });
+
       // Subscribe to player updates
       stompClient.subscribe(
         `/topic/game/${gameCode}/players`,
         (message: IMessage) => {
-          const data: PlayerUpdateMessage | PlayerListUpdate = JSON.parse(
-            message.body
+          const data: PlayerListUpdate = JSON.parse(message.body);
+          console.log(
+            "handlePlayerUpdate",
+            data,
+            message.body,
+            currentSessionId
           );
           handlePlayerUpdate(data);
         }
       );
-
-      // Subscribe to drawing updates
-      stompClient.subscribe(
-        `/topic/game/${gameCode}/drawing`,
-        (message: IMessage) => {
-          const data: DrawingSubmittedMessage = JSON.parse(message.body);
-          handleDrawingUpdate(data);
-        }
-      );
-
-      // Subscribe to guess updates
-      stompClient.subscribe(
-        `/topic/game/${gameCode}/guess`,
-        (message: IMessage) => {
-          const data: GuessSubmittedMessage = JSON.parse(message.body);
-          handleGuessUpdate(data);
-        }
-      );
-
-      // Subscribe to game state changes
-      stompClient.subscribe(
-        `/topic/game/${gameCode}/state`,
-        (message: IMessage) => {
-          const data: GameStateMessage = JSON.parse(message.body);
-          handleGameStateChange(data);
-        }
-      );
-
-      // Subscribe to personal kick notifications
-      stompClient.subscribe(`/user/queue/kick`, (message: IMessage) => {
-        const data: KickPlayerResponse = JSON.parse(message.body);
-        handleKicked(data);
-      });
     };
 
     stompClient.onDisconnect = () => {
@@ -165,42 +98,25 @@ export function useWebSocket(gameCode: string | null) {
     };
   }, [gameCode]);
 
-  const kickPlayer = useCallback(
-    (targetSessionId: string) => {
-      if (clientRef.current?.connected) {
-        const mySessionId = localStorage.getItem("sessionId") || "";
-        clientRef.current.publish({
-          destination: `/app/game/${gameCode}/kick`,
-          body: JSON.stringify({ targetSessionId }), // player to be kicked
-          headers: {
-            "x-player-session-id": mySessionId, // player pressed the kick
-          },
-        });
-        console.log(`Player: ${mySessionId} kicks ${targetSessionId}`);
-      }
-    },
-    [gameCode]
-  );
-
-  const sendDrawing = useCallback(
-    (drawingData: string) => {
-      if (clientRef.current?.connected) {
-        clientRef.current.publish({
-          destination: `/app/game/${gameCode}/drawing-submitted`,
-          body: JSON.stringify({ drawingData }),
-        });
-      }
-    },
-    [gameCode]
-  );
-
+  // functions
+  const kickPlayer = (targetSessionId: string) => {
+    if (clientRef.current?.connected) {
+      const mySessionId = currentSessionId || "";
+      clientRef.current.publish({
+        destination: `/app/game/${gameCode}/kick`,
+        body: JSON.stringify({ targetSessionId }), // player to be kicked
+        headers: {
+          "x-player-session-id": mySessionId, // player pressed the kick
+        },
+      });
+      console.log(`Player: ${mySessionId} kicks ${targetSessionId}`);
+    }
+  };
   return {
     connected,
-    players,
-    gameState,
-    currentDrawing,
-    guesses,
+
     kickPlayer,
-    sendDrawing,
+
+    players,
   };
 }

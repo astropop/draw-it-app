@@ -2,8 +2,8 @@
 "use client";
 
 import { useWebSocket } from "@/app/hooks/useWebSocket";
-import { GameSpectatorDTO } from "@/app/types/game.type";
-import { useEffect, useState } from "react";
+import { GameSpectatorDTO, GameStatus } from "@/app/types/game.type";
+import { useEffect, useMemo, useState } from "react";
 import FinishedSpectator from "./FinishedSpectator";
 import InProgressSpectator from "./InProgressSpectator";
 import WaitingSpectator from "./WaitingSpectator";
@@ -13,36 +13,25 @@ export default function GameSpectator({
 }: {
   initialData: GameSpectatorDTO;
 }) {
-  const [gameData, setGameData] = useState(initialData);
-  const { players, currentDrawing, guesses, gameState } = useWebSocket(
-    initialData.gameCode
-  );
+  const { players } = useWebSocket(initialData.gameCode);
 
-  useEffect(() => {
-    if (players.length > 0) {
-      setGameData((prev) => ({
-        ...prev, // rest of previous state
-        players:
-          players.length > 0 ? [...prev.players, ...players] : prev.players, // update players if available
-        // status: gameState.status || prev.status, // new status from response of WS
-        // currentRound: gameState.currentRound || prev.currentRound, // new round from response of WS
-        // maxRounds: gameState.maxRounds || prev.maxRounds, // usually not changing
-      }));
+  // Derive a view of gameData that prefers live websocket players when available.
+  const gameData = useMemo(() => {
+    if (players && players.length > 0) {
+      return { ...initialData, players } as GameSpectatorDTO;
     }
-    console.log("gameState", gameState);
-    console.log("players", players);
-    console.log("gameData", gameData);
-  }, [players, gameState, gameData]);
+    return initialData;
+  }, [initialData, players]);
 
-  if (gameData.status === "WAITING") {
+  if (gameData.status === GameStatus.WAITING) {
     return <WaitingSpectator props={{ gameData }} />;
   }
 
-  if (gameData.status === "IN_PROGRESS") {
-    return (
-      <InProgressSpectator props={{ gameData, currentDrawing, guesses }} />
-    );
-  }
+  // if (gameData.status === GameStatus.IN_PROGRESS) {
+  //   return (
+  //     <InProgressSpectator props={{ gameData, currentDrawing, guesses }} />
+  //   );
+  // }
 
   // FINISHED status
   return <FinishedSpectator props={{ gameData }} />;

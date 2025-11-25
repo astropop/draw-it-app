@@ -78,7 +78,10 @@ export default async function GamePage({
     redirect(`/spectate/${params.code}`);
   }
 
-  return <GameRoom gameData={gameData} />;
+  const cookieStore = await cookies();
+  const playerSessionId = cookieStore.get("sessionId")?.value;
+
+  return <GameRoom gameData={gameData} currentSessionId={playerSessionId} />;
 }
 
 export const metadata: Metadata = {

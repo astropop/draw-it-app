@@ -1,20 +1,24 @@
 package com.drawit.drawit.service;
 
+import com.drawit.drawit.dto.GameResponseDto;
 import com.drawit.drawit.dto.PlayerDto;
+import com.drawit.drawit.dto.WordStatusDto;
 import com.drawit.drawit.dto.websocket.*;
 import com.drawit.drawit.entity.GuestPlayer;
+import com.drawit.drawit.enums.GameStatus;
 import com.drawit.drawit.model.GameStateRedisModel;
 import com.drawit.drawit.repository.GuestPlayerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,26 +32,6 @@ public class GameWebSocketService {
 
     @Autowired
     private GuestPlayerRepository guestPlayerRepository;
-
-    /**
-     * Broadcast player joined
-     * Topic: /topic/game/{gameCode}/players
-     */
-    public void broadcastPlayerJoined(String gameCode, PlayerDto player) {
-        PlayerUpdateMessageDto message = PlayerUpdateMessageDto.builder()
-                .type("PLAYER_JOINED")
-                .nickname(player.getNickname())
-                .sessionId(player.getSessionId())
-                .score(player.getScore())
-                .build();
-
-        messagingTemplate.convertAndSend(
-                "/topic/game/" + gameCode + "/players",
-                message
-        );
-
-        log.info("Broadcast player joined: {} in game {}", player.getNickname(), gameCode);
-    }
 
     /**
      * Broadcast full player list
@@ -96,20 +80,22 @@ public class GameWebSocketService {
         // Update Redis
         GameStateRedisModel redisState = getGameStateFromRedis("game::" + gameCode);
 
+        // remove user from redis
         if (redisState != null) {
             redisState.getPlayers().removeIf(p -> p.getSessionId().equals(targetSessionId));
             redisTemplate.opsForValue().set("game::" + gameCode, redisState);
+
         }
 
         // Send personal message to kicked player
         KickPlayerResponseDto kickResponse = KickPlayerResponseDto.builder()
                 .kicked(true)
+                .targetSessionId(targetSessionId)
                 .reason("Kicked by host")
                 .gameCode(gameCode)
                 .build();
 
-        messagingTemplate.convertAndSendToUser(
-                targetSessionId,
+        messagingTemplate.convertAndSend(
                 "/queue/kick",
                 kickResponse
         );
@@ -124,7 +110,7 @@ public class GameWebSocketService {
      * Broadcast drawing submitted
      * Topic: /topic/game/{gameCode}/drawing
      */
-    public void broadcastDrawing(String gameCode, DrawingSubmittedMessageDto message) {
+    public void broadcastDrawing(String gameCode, DrawingSubmittedRequestDto message) {
         messagingTemplate.convertAndSend(
                 "/topic/game/" + gameCode + "/drawing",
                 message
@@ -133,6 +119,21 @@ public class GameWebSocketService {
         log.info("Broadcast drawing in game {} by {}", gameCode, message.getDrawer());
     }
 
+//    public void handleGuessSubmitted(String gameCode, String guesserSessionId, GuessSubmittedRequestDto request) {
+//        // Process guess logic (check correct, update score)
+//        // ... (integrate with GameService.submitGuess logic)
+//
+//        // Broadcast guess to all players
+//        GuessSubmittedMessageDto message = GuessSubmittedMessageDto.builder()
+//                .roundId(request.getRoundNo())
+//                .playerNickname(getPlayerNickname(guesserSessionId))
+//                .guess(request.getGuess())
+//                .isCorrect(checkCorrect(gameCode, request))
+//                .pointsEarned(calculatePoints(gameCode, request))
+//                .build();
+//
+//        broadcastGuess(gameCode, message);
+//    }
     /**
      * Broadcast guess submitted
      * Topic: /topic/game/{gameCode}/guess
@@ -147,18 +148,18 @@ public class GameWebSocketService {
                 gameCode, message.getPlayerNickname(), message.getGuess());
     }
 
-    /**
-     * Broadcast game state change
-     * Topic: /topic/game/{gameCode}/state
-     */
-    public void broadcastGameState(String gameCode, GameStateMessageDto message) {
-        messagingTemplate.convertAndSend(
-                "/topic/game/" + gameCode + "/state",
-                message
-        );
-
-        log.info("Broadcast game state: {} for game {}", message.getType(), gameCode);
-    }
+//    /**
+//     * Broadcast game state change
+//     * Topic: /topic/game/{gameCode}/state
+//     */
+//    public void broadcastGameState(String gameCode, GameStateMessageDto message) {
+//        messagingTemplate.convertAndSend(
+//                "/topic/game/" + gameCode + "/state",
+//                message
+//        );
+//
+//        log.info("Broadcast game state: {} for game {}", message.getType(), gameCode);
+//    }
 
     /**
      * get data from redis by gamecode

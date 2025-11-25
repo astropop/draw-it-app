@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class DrawingSubmittedMessageDto {
+public class DrawingSubmittedRequestDto {
     private Integer roundId;
     private String drawer;
     private String drawingData; // base64 image

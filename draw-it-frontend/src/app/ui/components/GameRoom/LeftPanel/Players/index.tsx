@@ -15,9 +15,9 @@ import PeopleIcon from "@mui/icons-material/People";
 export type PlayerProps = {
   currentPlayers: PlayerDTO[];
   localGameState: GameResponseDTO;
-  isHost: boolean;
+  // isHost: boolean;
   handleKick: (targetSessionId: string) => void;
-  isMyTurn: boolean;
+  // isMyTurn: boolean;
   currentSessionId: string;
 };
 
