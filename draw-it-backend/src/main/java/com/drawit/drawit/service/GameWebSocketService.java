@@ -124,7 +124,7 @@ public class GameWebSocketService {
      * Broadcast drawing submitted
      * Topic: /topic/game/{gameCode}/drawing
      */
-    public void broadcastDrawing(String gameCode, DrawingSubmittedMessageDto message) {
+    public void broadcastDrawing(String gameCode, DrawingSubmitMessageDto message) {
         messagingTemplate.convertAndSend(
                 "/topic/game/" + gameCode + "/drawing",
                 message

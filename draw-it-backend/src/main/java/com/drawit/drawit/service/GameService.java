@@ -2,9 +2,9 @@ package com.drawit.drawit.service;
 
 
 import com.drawit.drawit.dto.*;
-import com.drawit.drawit.dto.websocket.DrawingSubmittedMessageDto;
-import com.drawit.drawit.dto.websocket.GameStateMessageDto;
-import com.drawit.drawit.dto.websocket.GuessSubmittedMessageDto;
+
+import com.drawit.drawit.dto.websocket.*;
+
 import com.drawit.drawit.entity.Game;
 import com.drawit.drawit.entity.GuestPlayer;
 import com.drawit.drawit.enums.GameStatus;
@@ -560,7 +560,7 @@ public class GameService {
         redisTemplate.opsForValue().set(redisKey, redisState, 2, TimeUnit.HOURS);
 
         // Broadcast drawing to all players
-        DrawingSubmittedMessageDto drawingMessage = DrawingSubmittedMessageDto.builder()
+        DrawingSubmitMessageDto drawingMessage = DrawingSubmitMessageDto.builder()
                 .roundId(redisState.getCurrentRound())
                 .drawer(drawer.getNickname())
                 .drawingData(request.getDrawingData())
