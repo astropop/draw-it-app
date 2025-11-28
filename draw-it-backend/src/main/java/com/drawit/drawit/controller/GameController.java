@@ -26,6 +26,13 @@ public class GameController {
     @Autowired
     private GameService gameService;
 
+
+    @GetMapping("/list")
+    public ResponseEntity<List<GameListItemDto>> getGameList() {
+        List<GameListItemDto> games = gameService.getGameList();
+        return ResponseEntity.ok(games);
+    }
+
     @PostMapping("/create")
     public ResponseEntity<GameResponseDto> createGame(
             @Valid @RequestBody CreateGameRequestDto createGameRequestDto
@@ -47,11 +54,7 @@ public class GameController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/list")
-    public ResponseEntity<List<GameListItemDto>> getGameList() {
-        List<GameListItemDto> games = gameService.getGameList();
-        return ResponseEntity.ok(games);
-    }
+
 
     @GetMapping("/{gameCode}/spectate")
     public ResponseEntity<GameSpectatorDto> spectateGame(@PathVariable String gameCode) {
