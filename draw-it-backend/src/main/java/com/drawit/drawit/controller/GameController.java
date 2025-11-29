@@ -5,6 +5,7 @@ package com.drawit.drawit.controller;
 import com.drawit.drawit.dto.*;
 import com.drawit.drawit.dto.creategame.CreateGameRequestDto;
 import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
+import com.drawit.drawit.dto.joingame.JoinGameRequestDto;
 import com.drawit.drawit.service.GameService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ public class GameController {
             List<GameListItemResponseDto> games = gameService.getGameList();
             return ResponseEntity.ok(games);
         } catch (Exception e) {
-            log.error("Error createGame", e);
+            log.error("Error getGameList", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
     }
@@ -54,8 +55,13 @@ public class GameController {
     public ResponseEntity<GameResponseDto> joinGame(
             @Valid @RequestBody JoinGameRequestDto joinGameRequestDto
     ) {
-        GameResponseDto response = gameService.joinGame(joinGameRequestDto);
-        return ResponseEntity.ok(response);
+        try {
+            GameResponseDto response = gameService.joinGame(joinGameRequestDto);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error joinGame", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
 

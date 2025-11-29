@@ -4,6 +4,7 @@ package com.drawit.drawit.service;
 import com.drawit.drawit.dto.*;
 import com.drawit.drawit.dto.creategame.CreateGameRequestDto;
 import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
+import com.drawit.drawit.dto.joingame.JoinGameRequestDto;
 import com.drawit.drawit.dto.websocket.DrawingSubmitMessageDto;
 import com.drawit.drawit.dto.websocket.GameStateMessageDto;
 import com.drawit.drawit.dto.websocket.GuessSubmittedMessageDto;
@@ -148,7 +149,7 @@ public class GameService {
 
         String redisKey = "game::" + gameCode;
         // store in redis 2h
-        redisTemplate.opsForValue().set(redisKey, redisState, 2, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
 
         log.info("Game id: {} , code: {}", game.getId(), gameCode);
 
@@ -170,17 +171,22 @@ public class GameService {
                 .build();
     }
 
+    /**
+     * join game
+     * @param request name, code
+     * @return game response
+     */
     @Transactional
     public GameResponseDto joinGame(JoinGameRequestDto request) {
         // 1. Find game
         Game game = gameRepository.findByGameCode(request.getGameCode()).orElseThrow(() -> new RuntimeException("Game not found: " + request.getGameCode()));
 
-        // 2. Check if game is joinable
+        // 2. status must be waiting
         if (game.getStatus() != GameStatus.WAITING) {
             throw new RuntimeException("Game already started or finished");
         }
 
-        // 3. Check max players (2 for VERSUS mode)
+        // 3. Check max players 2
         long currentPlayers = guestPlayerRepository.countByGameAndIsActiveTrue(game);
         if (currentPlayers >= 2) {
             throw new RuntimeException("Game is full (max 2 players for VERSUS mode)");
@@ -199,6 +205,7 @@ public class GameService {
 
         GameStateRedisModel redisState = getGameStateFromRedis(redisKey);
 
+        // TODO reconstruct, no saving word into db
         if (redisState == null) {
             // Reconstruct from DB if missing
             redisState = reconstructRedisState(game);
@@ -207,18 +214,33 @@ public class GameService {
         // Add player to redis
         PlayerDto newPlayerDto = convertToPlayerDto(player);
         redisState.getPlayers().add(newPlayerDto);
-        redisTemplate.opsForValue().set(redisKey, redisState, 2, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
 
 
         log.info("Player {} joined game {}", player.getNickname(), request.getGameCode());
 
-        // 6. Return response
-        List<String> availableWords = redisState.getWords().stream().filter(w -> !w.getUsed()).map(WordStatusDto::getWord).collect(Collectors.toList());
+        // get unused words
+        List<String> availableWords = redisState.getWords().stream()
+                .filter(w -> !w.getUsed())
+                .map(WordStatusDto::getWord)
+                .collect(Collectors.toList());
 
-        // Broadcast player joined via WebSocket
-        webSocketService.broadcastPlayerJoined(request.getGameCode(), newPlayerDto);
-
-        return GameResponseDto.builder().gameId(game.getId()).gameCode(game.getGameCode()).sessionId(player.getSessionId()).status(game.getStatus()).theme(game.getTheme()).maxRounds(game.getMaxRounds()).currentRound(game.getCurrentRound()).drawingTime(game.getDrawingTime()).guessingTime(game.getGuessingTime()).isHost(false).words(availableWords).players(redisState.getPlayers()).build();
+        // TODO Broadcast player joined via WebSocket
+//        webSocketService.broadcastPlayerJoined(request.getGameCode(), newPlayerDto);
+        // Return response
+        return GameResponseDto.builder()
+                .gameId(game.getId())
+                .gameCode(game.getGameCode())
+                .playerSessionId(player.getSessionId())
+                .status(game.getStatus())
+                .theme(game.getTheme())
+                .maxRounds(game.getMaxRounds())
+                .currentRound(game.getCurrentRound())
+                .drawingTime(game.getDrawingTime())
+                .guessingTime(game.getGuessingTime())
+                .isHost(false).words(availableWords)
+                .players(redisState.getPlayers())
+                .build();
     }
 
 
