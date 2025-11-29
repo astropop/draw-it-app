@@ -2,6 +2,8 @@ package com.drawit.drawit.service;
 
 
 import com.drawit.drawit.dto.*;
+import com.drawit.drawit.dto.creategame.CreateGameRequestDto;
+import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
 import com.drawit.drawit.dto.websocket.DrawingSubmitMessageDto;
 import com.drawit.drawit.dto.websocket.GameStateMessageDto;
 import com.drawit.drawit.dto.websocket.GuessSubmittedMessageDto;
@@ -50,17 +52,17 @@ public class GameService {
     private GameWebSocketService webSocketService;
 
     /**
-     * GET GAME LIST
+     * GET GAME LIST including active players
      *
      * @return list game
      */
-    public List<GameListItemDto> getGameList() {
+    public List<GameListItemResponseDto> getGameList() {
         List<Game> games = gameRepository.findAll();
 
         return games.stream().map(game -> {
             int playerCount = guestPlayerRepository.countByGameAndIsActiveTrue(game).intValue();
 
-            return GameListItemDto.builder()
+            return GameListItemResponseDto.builder()
                     .gameCode(game.getGameCode())
                     .theme(game.getTheme())
                     .status(game.getStatus())
@@ -74,8 +76,8 @@ public class GameService {
 
     /**
      *
-     * @param request
-     * @return
+     * @param request from FE form
+     * @return information for displaying FE
      */
     @Transactional
     public GameResponseDto createGame(CreateGameRequestDto request) {

@@ -1,4 +1,4 @@
-package com.drawit.drawit.dto;
+package com.drawit.drawit.dto.getgamelist;
 
 import com.drawit.drawit.enums.GameStatus;
 import lombok.AllArgsConstructor;
@@ -8,11 +8,14 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * response for displaying FE
+ */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class GameListItemDto {
+public class GameListItemResponseDto {
     private String gameCode;
     private String theme;
     private GameStatus status;

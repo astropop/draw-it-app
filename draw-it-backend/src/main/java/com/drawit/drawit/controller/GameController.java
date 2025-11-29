@@ -3,10 +3,9 @@ package com.drawit.drawit.controller;
 
 
 import com.drawit.drawit.dto.*;
+import com.drawit.drawit.dto.creategame.CreateGameRequestDto;
+import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
 import com.drawit.drawit.service.GameService;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,9 +27,14 @@ public class GameController {
 
 
     @GetMapping("/list")
-    public ResponseEntity<List<GameListItemDto>> getGameList() {
-        List<GameListItemDto> games = gameService.getGameList();
-        return ResponseEntity.ok(games);
+    public ResponseEntity<List<GameListItemResponseDto>> getGameList() {
+        try {
+            List<GameListItemResponseDto> games = gameService.getGameList();
+            return ResponseEntity.ok(games);
+        } catch (Exception e) {
+            log.error("Error createGame", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
     @PostMapping("/create")
@@ -53,7 +57,6 @@ public class GameController {
         GameResponseDto response = gameService.joinGame(joinGameRequestDto);
         return ResponseEntity.ok(response);
     }
-
 
 
     @GetMapping("/{gameCode}/spectate")
