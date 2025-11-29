@@ -14,5 +14,6 @@ public class WordStatusDto {
     private String word;
     private Boolean used;
     private Integer usedInRound;
-    private String usedByPlayer;
+    private String usedByPlayerSessionId;
+    private String usedByPlayerNickname;
 }

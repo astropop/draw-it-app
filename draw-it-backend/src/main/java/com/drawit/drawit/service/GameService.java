@@ -84,7 +84,6 @@ public class GameService {
         String theme = request.getTheme().trim().toLowerCase();
         log.info("Creating game with theme: {}", theme);
 
-
         // Generate unique game code
         String gameCode;
         do {
@@ -119,32 +118,56 @@ public class GameService {
         game.setHostId(host.getId());
         game = gameRepository.save(game);
 
-        // Store session
-//        httpServletRequest.setAttribute("sessionId", host.getSessionId());
-//        httpServletRequest.setAttribute("gameCode", gameCode);
-//        httpServletRequest.setAttribute("nickname", host.getNickname());
-
-        // Generate words using HuggingFace (or default)
-
-
-        int wordCount = Math.max(request.getMaxRounds() + 2, 7);
+        // Generate words using HuggingFace (or default) quantity: max count x 2 + 2
+        int wordCount = Math.max(request.getMaxRounds() * 2 + 2, 7);
         List<String> rawWords = huggingFaceService.getOrCreateKeywords(request.getTheme(), wordCount);
-        // convert to wordstatusdto
-        List<WordStatusDto> words = rawWords.stream().map(w -> new WordStatusDto(w, false, null, null)).collect(Collectors.toList());
+        // convert to WordStatusDto
+        List<WordStatusDto> words = rawWords.stream()
+                .map(w -> new WordStatusDto(w,
+                        false,
+                        null,
+                        null,
+                        null))
+                .collect(Collectors.toList());
 
-        // Cache in Redis
-        // Store in Redis
-        GameStateRedisModel redisState = GameStateRedisModel.builder().gameId(game.getId()).gameCode(gameCode).theme(game.getTheme()).status(GameStatus.WAITING).maxRounds(game.getMaxRounds()).currentRound(0).drawingTime(game.getDrawingTime()).guessingTime(game.getGuessingTime()).words(words).players(List.of(convertToPlayerDto(host))).hostId(host.getId()).rounds(new ArrayList<>()).build();
+        // Cache in Redis : first initiate
+        GameStateRedisModel redisState = GameStateRedisModel.builder()
+                .gameId(game.getId())
+                .gameCode(gameCode)
+                .theme(game.getTheme())
+                .status(GameStatus.WAITING)
+                .maxRounds(game.getMaxRounds())
+                .currentRound(0)
+                .drawingTime(game.getDrawingTime())
+                .guessingTime(game.getGuessingTime())
+                .words(words)
+                .players(List.of(convertToPlayerDto(host)))
+                .hostId(host.getId())
+                .rounds(new ArrayList<>())
+                .build();
 
         String redisKey = "game::" + gameCode;
         // store in redis 2h
         redisTemplate.opsForValue().set(redisKey, redisState, 2, TimeUnit.HOURS);
 
-        log.info("Game created successfully: {}", gameCode);
-//        log.info("Game created successfullyRedis: {}", redisTemplate.opsForHash().;
+        log.info("Game id: {} , code: {}", game.getId(), gameCode);
 
         // Build response
-        return GameResponseDto.builder().gameId(game.getId()).gameCode(gameCode).sessionId(host.getSessionId()).status(GameStatus.WAITING).theme(game.getTheme()).maxRounds(game.getMaxRounds()).currentRound(0).drawingTime(game.getDrawingTime()).guessingTime(game.getGuessingTime()).isHost(true).words(rawWords).players(List.of(convertToPlayerDto(host))).build();
+        return GameResponseDto.builder().
+                gameId(game.getId())
+                .gameCode(gameCode)
+                .playerSessionId(host.getSessionId())
+                .status(GameStatus.WAITING)
+                .theme(game.getTheme())
+                .maxRounds(game.getMaxRounds())
+                .currentRound(0)
+                .drawingTime(game.getDrawingTime())
+                .guessingTime(game.getGuessingTime())
+                .isHost(true)
+                .words(rawWords)
+                .players(List.of(convertToPlayerDto(host)))
+
+                .build();
     }
 
     @Transactional
