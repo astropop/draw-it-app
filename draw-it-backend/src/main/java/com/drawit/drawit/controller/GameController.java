@@ -6,6 +6,7 @@ import com.drawit.drawit.dto.*;
 import com.drawit.drawit.dto.creategame.CreateGameRequestDto;
 import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
 import com.drawit.drawit.dto.joingame.JoinGameRequestDto;
+import com.drawit.drawit.dto.spectategame.SpectateGameDto;
 import com.drawit.drawit.service.GameService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -66,9 +67,14 @@ public class GameController {
 
 
     @GetMapping("/{gameCode}/spectate")
-    public ResponseEntity<GameSpectatorDto> spectateGame(@PathVariable String gameCode) {
-        GameSpectatorDto spectator = gameService.spectateGame(gameCode);
-        return ResponseEntity.ok(spectator);
+    public ResponseEntity<SpectateGameDto> spectateGame(@PathVariable String gameCode) {
+        try {
+            SpectateGameDto spectator = gameService.spectateGame(gameCode);
+            return ResponseEntity.ok(spectator);
+        } catch (Exception e) {
+            log.error("Error spectateGame", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
     // Re-join game, need sessionId of player

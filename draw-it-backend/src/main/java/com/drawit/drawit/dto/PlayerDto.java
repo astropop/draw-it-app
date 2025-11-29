@@ -19,9 +19,9 @@ public class PlayerDto {
     private Boolean isHost;
 
     /**
-     * sessionId to play a game
+     * player sessionId
      */
-    private String sessionId;
+    private String playerSessionId;
 
     /**
      * join the game at specific order

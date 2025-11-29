@@ -1,7 +1,7 @@
 package com.drawit.drawit.model;
 
 import com.drawit.drawit.dto.PlayerDto;
-import com.drawit.drawit.dto.RoundSpectatorDto;
+import com.drawit.drawit.dto.spectategame.SpectateGameRoundDto;
 import com.drawit.drawit.dto.WordStatusDto;
 import com.drawit.drawit.enums.GameStatus;
 import lombok.AllArgsConstructor;
@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,11 +35,16 @@ public class GameStateRedisModel implements Serializable {
     private List<PlayerDto> players = new ArrayList<>();
 
     // Current drawer session ID
-    private String currentDrawerSessionId;
+    private String currentDrawerSessionId; // missed guesser TODO
 
     // Round history
-    private List<RoundSpectatorDto> rounds = new ArrayList<>();
+    private List<SpectateGameRoundDto> rounds = new ArrayList<>();
 
     // Host ID
     private Long hostId;
+    private String hostPlayerSessionId;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime startedAt;
+    private LocalDateTime finishedAt;
 }

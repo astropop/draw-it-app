@@ -1,4 +1,4 @@
-package com.drawit.drawit.dto;
+package com.drawit.drawit.dto.spectategame;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,11 +11,13 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RoundSpectatorDto {
+public class SpectateGameRoundDto {
     private Integer roundNumber;
-    private String drawer;
+    private String drawerNickname;
+    private String drawerPlayerSessionId;
     private String selectedWord;
     private String drawingData;
     private Boolean containsText;
+
     private List<GuessDto> guesses;
 }
