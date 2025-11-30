@@ -1,4 +1,4 @@
-package com.drawit.drawit.dto;
+package com.drawit.drawit.dto.submitguess;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

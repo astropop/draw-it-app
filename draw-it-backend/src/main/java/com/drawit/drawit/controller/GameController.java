@@ -2,7 +2,7 @@
 package com.drawit.drawit.controller;
 
 
-import com.drawit.drawit.dto.*;
+import com.drawit.drawit.dto.GameResponseDto;
 import com.drawit.drawit.dto.creategame.CreateGameRequestDto;
 import com.drawit.drawit.dto.getgame.GetGameRequestDto;
 import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
@@ -11,6 +11,8 @@ import com.drawit.drawit.dto.spectategame.SpectateGameResponseDto;
 import com.drawit.drawit.dto.startgame.StartGameRequestDto;
 import com.drawit.drawit.dto.submitdrawing.SubmitDrawingRequestDto;
 import com.drawit.drawit.dto.submitdrawing.SubmitDrawingResponseDto;
+import com.drawit.drawit.dto.submitguess.SubmitGuessRequestDto;
+import com.drawit.drawit.dto.submitguess.SubmitGuessResponseDto;
 import com.drawit.drawit.service.GameService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -99,8 +101,9 @@ public class GameController {
 
     /**
      * change status of the game to in_progress, set first turn for random player
+     *
      * @param gameCode game code starts
-     * @param body information of player pressed
+     * @param body     information of player pressed
      * @return information of the game with new status
      */
     @PostMapping("/{gameCode}/start")
@@ -122,8 +125,13 @@ public class GameController {
             @PathVariable String gameCode,
             @Valid @RequestBody SubmitDrawingRequestDto submitDrawingRequestDto
     ) {
-        SubmitDrawingResponseDto response = gameService.submitDrawing(gameCode, submitDrawingRequestDto);
-        return ResponseEntity.ok(response);
+        try {
+            SubmitDrawingResponseDto response = gameService.submitDrawing(gameCode, submitDrawingRequestDto);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error submitDrawing", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
     @PostMapping("/{gameCode}/submit-guess")
@@ -131,7 +139,12 @@ public class GameController {
             @PathVariable String gameCode,
             @Valid @RequestBody SubmitGuessRequestDto submitGuessRequestDto
     ) {
-        SubmitGuessResponseDto response = gameService.submitGuess(gameCode, submitGuessRequestDto);
-        return ResponseEntity.ok(response);
+        try {
+            SubmitGuessResponseDto response = gameService.submitGuess(gameCode, submitGuessRequestDto);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error submitGuess", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 }

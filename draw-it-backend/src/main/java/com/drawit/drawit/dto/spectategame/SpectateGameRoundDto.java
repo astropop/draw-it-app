@@ -17,6 +17,7 @@ public class SpectateGameRoundDto {
     private String drawerPlayerSessionId;
     private String selectedWord;
     private String drawingData;
+    private Integer drawingTime;
     private String containingText;
 
     private List<GuessDto> guesses;
