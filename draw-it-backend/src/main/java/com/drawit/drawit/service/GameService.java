@@ -3,12 +3,13 @@ package com.drawit.drawit.service;
 
 import com.drawit.drawit.dto.*;
 import com.drawit.drawit.dto.creategame.CreateGameRequestDto;
+import com.drawit.drawit.dto.getgame.GetGameRequestDto;
 import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
 import com.drawit.drawit.dto.joingame.JoinGameRequestDto;
 import com.drawit.drawit.dto.spectategame.GuessDto;
 import com.drawit.drawit.dto.PlayerDto;
 import com.drawit.drawit.dto.spectategame.SpectateGameRoundDto;
-import com.drawit.drawit.dto.spectategame.SpectateGameDto;
+import com.drawit.drawit.dto.spectategame.SpectateGameResponseDto;
 import com.drawit.drawit.dto.websocket.DrawingSubmitMessageDto;
 import com.drawit.drawit.dto.websocket.GameStateMessageDto;
 import com.drawit.drawit.dto.websocket.GuessSubmittedMessageDto;
@@ -257,7 +258,7 @@ public class GameService {
      * @param gameCode game code
      * @return game info
      */
-    public SpectateGameDto spectateGame(String gameCode) {
+    public SpectateGameResponseDto spectateGame(String gameCode) {
         // Try Redis first
         String redisKey = "game::" + gameCode;
         GameStateRedisModel redisState = getGameStateFromRedis(redisKey);
@@ -272,17 +273,20 @@ public class GameService {
         // Build spectator Dto
         List<SpectateGameRoundDto> allRounds = redisState.getRounds();
 
-        return SpectateGameDto.builder()
+        return SpectateGameResponseDto.builder()
+                // information of the game
                 .gameCode(redisState.getGameCode())
                 .theme(redisState.getTheme())
                 .status(redisState.getStatus())
                 .currentRound(redisState.getCurrentRound())
                 .maxRounds(redisState.getMaxRounds())
-                .playersInGame(redisState.getPlayers())
-                .allRounds(allRounds)
                 .createdAt(redisState.getCreatedAt())
                 .startedAt(redisState.getStartedAt())
                 .finishedAt(redisState.getFinishedAt())
+                // players
+                .playersInGame(redisState.getPlayers())
+                // display all rounds
+                .allRounds(allRounds)
                 .build();
     }
 
@@ -290,12 +294,12 @@ public class GameService {
     /**
      * GET GAME (for player) for re-joining game
      *
-     * @param gameCode
-     * @param playerSessionId
-     * @return
+     * @param gameCode game code from path
+     * @param body information of the player
+     * @return information of a game
      */
-    public GameResponseDto getGame(String gameCode, String playerSessionId) {
-
+    public GameResponseDto getGame(String gameCode, GetGameRequestDto body) {
+        String playerSessionId = body.getPlayerSessionId();
         if (playerSessionId == null) {
             throw new RuntimeException("No session found. Please join the game first.");
         }
@@ -304,22 +308,43 @@ public class GameService {
         String redisKey = "game::" + gameCode;
         GameStateRedisModel redisState = getGameStateFromRedis(redisKey);
 
+        // TODO reconstruct from DB, update later
         if (redisState == null) {
             Game game = gameRepository.findByGameCode(gameCode).orElseThrow(() -> new RuntimeException("Game not found"));
             redisState = reconstructRedisState(game);
         }
 
         // Find player
-        Optional<PlayerDto> currentPlayer = redisState.getPlayers().stream().filter(p -> p.getPlayerSessionId().equals(playerSessionId)).findFirst();
+        Optional<PlayerDto> currentPlayer = redisState.getPlayers().stream()
+                .filter(p -> p.getPlayerSessionId().equals(playerSessionId))
+                .findFirst();
 
         if (currentPlayer.isEmpty()) {
             throw new RuntimeException("You are not in this game");
         }
 
-        // Return available words (not used)
-        List<String> availableWords = redisState.getWords().stream().filter(w -> !w.getUsed()).map(WordStatusDto::getWord).collect(Collectors.toList());
+        // Return available words (not used) in redis
+        List<String> availableWords = redisState.getWords().stream()
+                .filter(w -> !w.getUsed()).map(WordStatusDto::getWord)
+                .collect(Collectors.toList());
 
-        return GameResponseDto.builder().gameId(redisState.getGameId()).gameCode(redisState.getGameCode()).sessionId(playerSessionId).status(redisState.getStatus()).theme(redisState.getTheme()).maxRounds(redisState.getMaxRounds()).currentRound(redisState.getCurrentRound()).drawingTime(redisState.getDrawingTime()).guessingTime(redisState.getGuessingTime()).isHost(currentPlayer.get().getIsHost()).words(availableWords).players(redisState.getPlayers()).currentDrawerSessionId(redisState.getCurrentDrawerSessionId()).build();
+        return GameResponseDto.builder()
+                .gameId(redisState.getGameId())
+                .gameCode(redisState.getGameCode())
+                .playerSessionId(playerSessionId) // player session id of requester
+                .isHost(currentPlayer.get().getIsHost())
+                .status(redisState.getStatus())
+                .theme(redisState.getTheme())
+                .maxRounds(redisState.getMaxRounds())
+                .currentRound(redisState.getCurrentRound())
+                .drawingTime(redisState.getDrawingTime())
+                .guessingTime(redisState.getGuessingTime())
+
+                .words(availableWords)
+                .players(redisState.getPlayers())
+
+                .currentDrawerSessionId(redisState.getCurrentDrawerSessionId()) // TODO consider to update later
+                .build();
     }
 
     /**

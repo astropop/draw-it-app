@@ -29,5 +29,5 @@ public class GameResponseDto {
     private Integer guessingTime;
     private Boolean isHost;
     private List<PlayerDto> players;
-    private String currentDrawerSessionId; // drawer, missed guesser
+    private String currentDrawerSessionId; // TODO drawer, missed guesser
 }

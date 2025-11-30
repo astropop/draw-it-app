@@ -4,9 +4,10 @@ package com.drawit.drawit.controller;
 
 import com.drawit.drawit.dto.*;
 import com.drawit.drawit.dto.creategame.CreateGameRequestDto;
+import com.drawit.drawit.dto.getgame.GetGameRequestDto;
 import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
 import com.drawit.drawit.dto.joingame.JoinGameRequestDto;
-import com.drawit.drawit.dto.spectategame.SpectateGameDto;
+import com.drawit.drawit.dto.spectategame.SpectateGameResponseDto;
 import com.drawit.drawit.service.GameService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -67,9 +68,9 @@ public class GameController {
 
 
     @GetMapping("/{gameCode}/spectate")
-    public ResponseEntity<SpectateGameDto> spectateGame(@PathVariable String gameCode) {
+    public ResponseEntity<SpectateGameResponseDto> spectateGame(@PathVariable String gameCode) {
         try {
-            SpectateGameDto spectator = gameService.spectateGame(gameCode);
+            SpectateGameResponseDto spectator = gameService.spectateGame(gameCode);
             return ResponseEntity.ok(spectator);
         } catch (Exception e) {
             log.error("Error spectateGame", e);
@@ -77,22 +78,26 @@ public class GameController {
         }
     }
 
-    // Re-join game, need sessionId of player
+    // Re-join game, join game, need information of player
     @PostMapping("/{gameCode}")
     public ResponseEntity<GameResponseDto> getGame(
             @PathVariable String gameCode,
-            @Valid @RequestBody PlayerSessionDto playerSessionDto
+            @Valid @RequestBody GetGameRequestDto body
     ) {
-        String playerSessionId = playerSessionDto.getPlayerSessionId();
-        GameResponseDto game = gameService.getGame(gameCode, playerSessionId);
-        return ResponseEntity.ok(game);
+        try {
+            GameResponseDto game = gameService.getGame(gameCode, body);
+            return ResponseEntity.ok(game);
+        } catch (Exception e) {
+            log.error("Error getGame", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
 
     @PostMapping("/{gameCode}/start")
     public ResponseEntity<GameResponseDto> startGame(
             @PathVariable String gameCode,
-            @Valid @RequestBody PlayerSessionDto playerSessionDto
+            @Valid @RequestBody GetGameRequestDto playerSessionDto
     ) {
         String playerSessionId = playerSessionDto.getPlayerSessionId();
         GameResponseDto response = gameService.startGame(gameCode, playerSessionId);

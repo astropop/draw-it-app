@@ -15,7 +15,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class SpectateGameDto {
+public class SpectateGameResponseDto {
     private String gameCode;
     private String theme;
     private GameStatus status;
