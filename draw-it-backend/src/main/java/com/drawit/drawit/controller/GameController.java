@@ -8,6 +8,7 @@ import com.drawit.drawit.dto.getgame.GetGameRequestDto;
 import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
 import com.drawit.drawit.dto.joingame.JoinGameRequestDto;
 import com.drawit.drawit.dto.spectategame.SpectateGameResponseDto;
+import com.drawit.drawit.dto.startgame.StartGameRequestDto;
 import com.drawit.drawit.service.GameService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -94,14 +95,24 @@ public class GameController {
     }
 
 
+    /**
+     * change status of the game to in_progress, set first turn for random player
+     * @param gameCode game code starts
+     * @param body information of player pressed
+     * @return information of the game with new status
+     */
     @PostMapping("/{gameCode}/start")
     public ResponseEntity<GameResponseDto> startGame(
             @PathVariable String gameCode,
-            @Valid @RequestBody GetGameRequestDto playerSessionDto
+            @Valid @RequestBody StartGameRequestDto body
     ) {
-        String playerSessionId = playerSessionDto.getPlayerSessionId();
-        GameResponseDto response = gameService.startGame(gameCode, playerSessionId);
-        return ResponseEntity.ok(response);
+        try {
+            GameResponseDto response = gameService.startGame(gameCode, body);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error startGame", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
     @PostMapping("/{gameCode}/submit-drawing")

@@ -10,6 +10,7 @@ import com.drawit.drawit.dto.spectategame.GuessDto;
 import com.drawit.drawit.dto.PlayerDto;
 import com.drawit.drawit.dto.spectategame.SpectateGameRoundDto;
 import com.drawit.drawit.dto.spectategame.SpectateGameResponseDto;
+import com.drawit.drawit.dto.startgame.StartGameRequestDto;
 import com.drawit.drawit.dto.websocket.DrawingSubmitMessageDto;
 import com.drawit.drawit.dto.websocket.GameStateMessageDto;
 import com.drawit.drawit.dto.websocket.GuessSubmittedMessageDto;
@@ -350,14 +351,14 @@ public class GameService {
     /**
      * Start a game
      *
-     * @param gameCode
-     * @param playerSessionId
-     * @return
+     * @param gameCode from path
+     * @param body information of host player
+     * @return game room information
      */
     @Transactional
-    public GameResponseDto startGame(String gameCode, String playerSessionId) {
+    public GameResponseDto startGame(String gameCode, StartGameRequestDto body) {
 
-
+        String playerSessionId = body.getPlayerSessionId();
         if (playerSessionId == null) {
             throw new RuntimeException("No session found");
         }
@@ -406,28 +407,57 @@ public class GameService {
         // Update state
         redisState.setStatus(GameStatus.IN_PROGRESS);
         redisState.setCurrentRound(1);
-        redisState.setCurrentDrawerSessionId(firstDrawer.getPlayerSessionId());
+        redisState.setCurrentDrawerSessionId(firstDrawer.getPlayerSessionId()); // TODO update drawer and guesser
 
-        // Initialize first round
-        SpectateGameRoundDto firstRound = SpectateGameRoundDto.builder().roundNumber(1).drawer(firstDrawer.getNickname()).selectedWord(null) // Not selected yet
-                .drawingData(null).containsText(false).guesses(new ArrayList<>()).build();
+        // Initialize first round, round have the same attribute to spectator
+        SpectateGameRoundDto firstRound = SpectateGameRoundDto.builder()
+                .roundNumber(1)
+                .drawerNickname(firstDrawer.getNickname())
+                .drawerPlayerSessionId(firstDrawer.getPlayerSessionId())
+                .selectedWord(null) // Not selected yet
+                .drawingData(null)
+                .containsText(false)
+                .guesses(new ArrayList<>()).build();
 
         redisState.getRounds().add(firstRound);
 
         // Save to Redis
-        redisTemplate.opsForValue().set(redisKey, redisState, 2, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
 
-        log.info("Game {} started. First drawer: {}", gameCode, firstDrawer.getNickname());
+        log.info("Game {} started. First drawer: {} , player sessionid: {}", gameCode, firstRound.getDrawerNickname(), firstDrawer.getPlayerSessionId());
 
-        // Return word into response
-        List<String> availableWords = redisState.getWords().stream().filter(w -> !w.getUsed()).map(WordStatusDto::getWord).collect(Collectors.toList());
+        // Return word into response, for player choosing
+        List<String> availableWords = redisState.getWords().stream()
+                .filter(w -> !w.getUsed()).map(WordStatusDto::getWord)
+                .collect(Collectors.toList());
 
-        // Broadcast game started
-        GameStateMessageDto stateMessage = GameStateMessageDto.builder().type("GAME_STARTED").gameCode(gameCode).currentRound(1).maxRounds(redisState.getMaxRounds()).currentDrawer(firstDrawer.getNickname()).status(GameStatus.IN_PROGRESS).build();
+        // TODO : Websocket Broadcast game started
+//        GameStateMessageDto stateMessage = GameStateMessageDto.builder().type("GAME_STARTED")
+//                .gameCode(gameCode)
+//                .currentRound(1)
+//                .maxRounds(redisState.getMaxRounds())
+//                .currentDrawer(firstDrawer.getNickname())
+//                .status(GameStatus.IN_PROGRESS)
+//                .build();
+//
+//        webSocketService.broadcastGameState(gameCode, stateMessage);
 
-        webSocketService.broadcastGameState(gameCode, stateMessage);
+        return GameResponseDto.builder()
+                .gameId(game.getId())
+                .gameCode(gameCode)
+                .playerSessionId(playerSessionId)
+                .status(GameStatus.IN_PROGRESS)
+                .theme(game.getTheme())
+                .maxRounds(game.getMaxRounds())
+                .currentRound(1)
+                .drawingTime(game.getDrawingTime())
+                .guessingTime(game.getGuessingTime())
+                .isHost(true)
+                .words(availableWords)
+                .players(redisState.getPlayers())
+                .currentDrawerSessionId(firstDrawer.getPlayerSessionId()) // TODO consider to update drawer and guesser
 
-        return GameResponseDto.builder().gameId(game.getId()).gameCode(gameCode).sessionId(playerSessionId).status(GameStatus.IN_PROGRESS).theme(game.getTheme()).maxRounds(game.getMaxRounds()).currentRound(1).drawingTime(game.getDrawingTime()).guessingTime(game.getGuessingTime()).isHost(true).words(availableWords).players(redisState.getPlayers()).currentDrawerSessionId(firstDrawer.getPlayerSessionId()).build();
+                .build();
     }
 
     /**
