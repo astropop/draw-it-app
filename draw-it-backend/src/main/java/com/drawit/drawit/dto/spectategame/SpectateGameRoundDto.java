@@ -17,7 +17,7 @@ public class SpectateGameRoundDto {
     private String drawerPlayerSessionId;
     private String selectedWord;
     private String drawingData;
-    private Boolean containsText;
+    private String containingText;
 
     private List<GuessDto> guesses;
 }

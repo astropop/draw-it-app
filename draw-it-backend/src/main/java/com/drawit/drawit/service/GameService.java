@@ -11,6 +11,8 @@ import com.drawit.drawit.dto.PlayerDto;
 import com.drawit.drawit.dto.spectategame.SpectateGameRoundDto;
 import com.drawit.drawit.dto.spectategame.SpectateGameResponseDto;
 import com.drawit.drawit.dto.startgame.StartGameRequestDto;
+import com.drawit.drawit.dto.submitdrawing.SubmitDrawingRequestDto;
+import com.drawit.drawit.dto.submitdrawing.SubmitDrawingResponseDto;
 import com.drawit.drawit.dto.websocket.DrawingSubmitMessageDto;
 import com.drawit.drawit.dto.websocket.GameStateMessageDto;
 import com.drawit.drawit.dto.websocket.GuessSubmittedMessageDto;
@@ -416,7 +418,7 @@ public class GameService {
                 .drawerPlayerSessionId(firstDrawer.getPlayerSessionId())
                 .selectedWord(null) // Not selected yet
                 .drawingData(null)
-                .containsText(false)
+                .containingText(null)
                 .guesses(new ArrayList<>()).build();
 
         redisState.getRounds().add(firstRound);
@@ -477,10 +479,10 @@ public class GameService {
     }
 
     /**
-     *
-     * @param gameCode
-     * @param request
-     * @return
+     * submit drawing
+     * @param gameCode from path
+     * @param request information of user and drawing data
+     * @return information after submit, score, containing text
      */
     @Transactional
     public SubmitDrawingResponseDto submitDrawing(String gameCode, SubmitDrawingRequestDto request) {
@@ -494,6 +496,7 @@ public class GameService {
         GameStateRedisModel redisState = getGameStateFromRedis(redisKey);
 
         if (redisState == null) {
+            // TODO get information again from db
             throw new RuntimeException("Game not found in cache");
         }
 
@@ -508,7 +511,10 @@ public class GameService {
         }
 
         // Check if word already used
-        Optional<WordStatusDto> wordOpt = redisState.getWords().stream().filter(w -> w.getWord().equalsIgnoreCase(request.getSelectedWord())).findFirst();
+        Optional<WordStatusDto> wordOpt = redisState.getWords().stream()
+                .filter(w -> w.getWord()
+                .equalsIgnoreCase(request.getSelectedWord()))
+                .findFirst();
 
         if (wordOpt.isEmpty()) {
             throw new RuntimeException("Invalid word selection");
@@ -519,12 +525,15 @@ public class GameService {
             throw new RuntimeException("Word already used in round " + wordStatus.getUsedInRound());
         }
 
-        // OCR check for keyword text (yêu cầu 4)
-        boolean containsKeyword = ocrService.containsKeywordText(request.getDrawingData(), request.getSelectedWord());
-        int penalty = ocrService.calculatePenalty(containsKeyword);
+        // OCR check for keyword text, call AI to check image
+        String containingKeyword = ocrService.containingKeywordText(request.getDrawingData(), request.getSelectedWord());
+        int penalty = ocrService.calculatePenalty(containingKeyword);
 
         // Find drawer player
-        Optional<PlayerDto> drawerOpt = redisState.getPlayers().stream().filter(p -> p.getPlayerSessionId().equals(playerSessionId)).findFirst();
+        Optional<PlayerDto> drawerOpt = redisState.getPlayers().stream()
+                .filter(p -> p.getPlayerSessionId()
+                .equals(playerSessionId))
+                .findFirst();
 
         if (drawerOpt.isEmpty()) {
             throw new RuntimeException("Player not found");
@@ -540,26 +549,37 @@ public class GameService {
         // Mark word as used
         wordStatus.setUsed(true);
         wordStatus.setUsedInRound(redisState.getCurrentRound());
-        wordStatus.setUsedByPlayer(drawer.getNickname());
+        wordStatus.setUsedByPlayerNickname(drawer.getNickname());
+        wordStatus.setUsedByPlayerSessionId(drawer.getPlayerSessionId());
 
         // Update current round with drawing
         int currentRoundIndex = redisState.getRounds().size() - 1;
         SpectateGameRoundDto currentRound = redisState.getRounds().get(currentRoundIndex);
         currentRound.setSelectedWord(request.getSelectedWord());
         currentRound.setDrawingData(request.getDrawingData());
-        currentRound.setContainsText(containsKeyword);
+        currentRound.setContainingText(containingKeyword);
 
         // Save to Redis
-        redisTemplate.opsForValue().set(redisKey, redisState, 2, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
 
-        // Broadcast drawing to all players
-        DrawingSubmitMessageDto drawingMessage = DrawingSubmitMessageDto.builder().roundId(redisState.getCurrentRound()).drawer(drawer.getNickname()).drawingData(request.getDrawingData()).containsText(containsKeyword).containsKeyword(containsKeyword).build();
-
-        webSocketService.broadcastDrawing(gameCode, drawingMessage);
+        // TODO update websocket Broadcast drawing to all players
+//        DrawingSubmitMessageDto drawingMessage = DrawingSubmitMessageDto.builder()
+//                .roundId(redisState.getCurrentRound())
+//                .drawer(drawer.getNickname())
+//                .drawingData(request.getDrawingData())
+//                .containsText(containsKeyword)
+//                .containsKeyword(containsKeyword)
+//                .build();
+//
+//        webSocketService.broadcastDrawing(gameCode, drawingMessage);
 
         log.info("Drawing submitted by {} for word '{}'. Penalty: {}", drawer.getNickname(), request.getSelectedWord(), penalty);
 
-        return SubmitDrawingResponseDto.builder().success(true).containsKeyword(containsKeyword).warning(containsKeyword ? "Warning: Drawing contains text! -" + penalty + " points" : null).pointsPenalty(penalty).nextDrawerSessionId(null) // Will be set after all players guess
+        return SubmitDrawingResponseDto.builder()
+                .success(true)
+                .containingKeyword(containingKeyword)
+                .pointsPenalty(penalty)
+                .nextDrawerPlayerSessionId(null) // Will be set after the next player guess
                 .build();
     }
 

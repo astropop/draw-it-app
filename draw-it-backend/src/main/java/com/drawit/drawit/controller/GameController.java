@@ -9,6 +9,8 @@ import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
 import com.drawit.drawit.dto.joingame.JoinGameRequestDto;
 import com.drawit.drawit.dto.spectategame.SpectateGameResponseDto;
 import com.drawit.drawit.dto.startgame.StartGameRequestDto;
+import com.drawit.drawit.dto.submitdrawing.SubmitDrawingRequestDto;
+import com.drawit.drawit.dto.submitdrawing.SubmitDrawingResponseDto;
 import com.drawit.drawit.service.GameService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
