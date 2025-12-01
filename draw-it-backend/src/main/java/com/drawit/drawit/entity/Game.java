@@ -51,8 +51,6 @@ public class Game {
     @Column(nullable = false)
     private Integer guessingTime;
 
-
-
     @Column
     private Long hostId;
 

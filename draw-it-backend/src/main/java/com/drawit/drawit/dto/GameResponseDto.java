@@ -25,6 +25,7 @@ public class GameResponseDto {
     private String theme;
     private Integer maxRounds;
     private Integer currentRound;
+    private Integer currentTurnNumber; // start by 0
     private Integer drawingTime;
     private Integer guessingTime;
     private Boolean isHost;

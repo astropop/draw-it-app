@@ -15,13 +15,14 @@ import com.drawit.drawit.dto.submitdrawing.SubmitDrawingRequestDto;
 import com.drawit.drawit.dto.submitdrawing.SubmitDrawingResponseDto;
 import com.drawit.drawit.dto.submitguess.SubmitGuessRequestDto;
 import com.drawit.drawit.dto.submitguess.SubmitGuessResponseDto;
-import com.drawit.drawit.dto.websocket.GameStateMessageDto;
 import com.drawit.drawit.entity.Game;
 import com.drawit.drawit.entity.GuestPlayer;
+import com.drawit.drawit.entity.RoundHistory;
 import com.drawit.drawit.enums.GameStatus;
 import com.drawit.drawit.model.GameStateRedisModel;
 import com.drawit.drawit.repository.GameRepository;
 import com.drawit.drawit.repository.GuestPlayerRepository;
+import com.drawit.drawit.repository.RoundHistoryRepository;
 import com.drawit.drawit.repository.WordCacheRepository;
 import com.drawit.drawit.util.GameCodeGenerator;
 import lombok.RequiredArgsConstructor;
@@ -33,10 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -59,6 +57,8 @@ public class GameService {
     private OCRService ocrService;
     @Autowired
     private GameWebSocketService webSocketService;
+    @Autowired
+    private RoundHistoryRepository roundHistoryRepository;
 
     /**
      * GET GAME LIST including active players
@@ -405,16 +405,23 @@ public class GameService {
         Random random = new Random();
         List<PlayerDto> players = redisState.getPlayers();
         int randomIndex = random.nextInt(players.size());
-        PlayerDto firstDrawer = players.get(randomIndex);
+
+        // swap random player to first
+        Collections.swap(players, 0, randomIndex);
+        redisState.setPlayers(players);
+        redisState.setCurrentTurnNum(0); //  turn 0 :  drawing, turn 1: guessing
+
+        PlayerDto firstDrawer = players.get(0);
 
         // Update state
         redisState.setStatus(GameStatus.IN_PROGRESS);
-        redisState.setCurrentRound(1);
+        redisState.setCurrentRound(1); // round = 1
         redisState.setCurrentDrawerSessionId(firstDrawer.getPlayerSessionId()); // TODO update drawer and guesser
 
         // Initialize first round, round have the same attribute to spectator
         SpectateGameRoundDto firstRound = SpectateGameRoundDto.builder()
-                .roundNumber(1)
+                .roundNumber(redisState.getCurrentRound())
+                .turnNumber(redisState.getCurrentTurnNum())
                 .drawerNickname(firstDrawer.getNickname())
                 .drawerPlayerSessionId(firstDrawer.getPlayerSessionId())
                 .selectedWord(null) // Not selected yet
@@ -424,14 +431,14 @@ public class GameService {
 
         redisState.getRounds().add(firstRound);
 
-        // Save to Redis
+        // Save to Redis // TODO bug, add too many item into redis
         redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
 
         log.info("Game {} started. First drawer: {} , player sessionid: {}", gameCode, firstRound.getDrawerNickname(), firstDrawer.getPlayerSessionId());
 
-        // Return word into response, for player choosing
+        // Return word into response, for player choosing, start game, every word are unused
         List<String> availableWords = redisState.getWords().stream()
-                .filter(w -> !w.getUsed()).map(WordStatusDto::getWord)
+                .map(WordStatusDto::getWord)
                 .collect(Collectors.toList());
 
         // TODO : Websocket Broadcast game started
@@ -452,7 +459,8 @@ public class GameService {
                 .status(GameStatus.IN_PROGRESS)
                 .theme(game.getTheme())
                 .maxRounds(game.getMaxRounds())
-                .currentRound(1)
+                .currentRound(redisState.getCurrentRound())
+                .currentTurnNumber(redisState.getCurrentTurnNum())
                 .drawingTime(game.getDrawingTime())
                 .guessingTime(game.getGuessingTime())
                 .isHost(true)
@@ -461,22 +469,6 @@ public class GameService {
                 .currentDrawerSessionId(firstDrawer.getPlayerSessionId()) // TODO consider to update drawer and guesser
 
                 .build();
-    }
-
-    /**
-     * get data from redis by game code
-     *
-     * @param redisKey input
-     * @return GameStateRedisModel
-     */
-    private GameStateRedisModel getGameStateFromRedis(String redisKey) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.convertValue(redisTemplate.opsForValue().get(redisKey), GameStateRedisModel.class);
-        } catch (Exception e) {
-            log.error("Failed to get from Redis: {}", e.getMessage());
-            return null;
-        }
     }
 
     /**
@@ -532,8 +524,7 @@ public class GameService {
 
         // Find drawer player
         Optional<PlayerDto> drawerOpt = redisState.getPlayers().stream()
-                .filter(p -> p.getPlayerSessionId()
-                .equals(playerSessionId))
+                .filter(p -> p.getPlayerSessionId().equals(playerSessionId))
                 .findFirst();
 
         if (drawerOpt.isEmpty()) {
@@ -553,13 +544,14 @@ public class GameService {
         wordStatus.setUsedByPlayerNickname(drawer.getNickname());
         wordStatus.setUsedByPlayerSessionId(drawer.getPlayerSessionId());
 
-        // Update current round with drawing
-        int currentRoundIndex = redisState.getRounds().size() - 1;
+        // Update current round with drawing, submit at specific round number
+        int currentRoundIndex = request.getRoundNumber() - 1;
         SpectateGameRoundDto currentRound = redisState.getRounds().get(currentRoundIndex);
         currentRound.setSelectedWord(request.getSelectedWord());
         currentRound.setDrawingData(request.getDrawingData());
         currentRound.setContainingText(containingKeyword);
         currentRound.setDrawingTime(request.getDrawingTime());
+        currentRound.setPenaltyPoints(penalty);
 
         // Save to Redis
         redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
@@ -575,7 +567,7 @@ public class GameService {
 //
 //        webSocketService.broadcastDrawing(gameCode, drawingMessage);
 
-        log.info("Drawing submitted by {} for word '{}'. Penalty: {}", drawer.getNickname(), request.getSelectedWord(), penalty);
+        log.info("Drawing submitted by {} for word '{}'. Penalty: {}, in round {} in turn {}", drawer.getNickname(), request.getSelectedWord(), penalty, currentRound.getRoundNumber(), currentRound.getTurnNumber());
 
         return SubmitDrawingResponseDto.builder()
                 .success(true)
@@ -641,13 +633,16 @@ public class GameService {
 
         // Calculate points
         int pointsEarned = 0;
+
         if (isCorrect) {
             // Base points: Max = max time each guessing round
             // Bonus: guess sooner get more points
 
-            pointsEarned = redisState.getGuessingTime() - request.getGuessingTime(); // Max = guessingtime, min : 0
+            pointsEarned = redisState.getGuessingTime() - request.getGuessingTime(); // Max = guessing time, min : 0
             // Update player score
             guesser.setScore(guesser.getScore() + pointsEarned);
+//            // round complete
+//            roundComplete = true;
         }
 
         // Add guess to round
@@ -661,23 +656,17 @@ public class GameService {
 
         currentRound.getGuesses().add(guessDto);
 
-        // Check if all players (except drawer) have guessed
-        int expectedGuesses = redisState.getPlayers().size() - 1; // Exclude drawer : value : 1
-        boolean roundComplete = currentRound.getGuesses().size() >= expectedGuesses; // guess 1 times
-
-        // If round complete, prepare next round or finish game
+        // guess = 1 => finish a round
+        boolean roundComplete = currentRound.getGuesses().size() >= (redisState.getPlayers().size() - 1);
         if (roundComplete) {
-            if (redisState.getCurrentRound() < redisState.getMaxRounds()) { // current round < max round
-                // Start next round
-                startNextRound(redisState);
-            } else {
-                // Game finished
-                finishGame(gameCode, redisState);
-            }
+            // save history to db
+            saveRoundHistoryToDB(redisState, currentRound, gameCode);
+            // handle turn
+            handleTurnTransition(gameCode, redisState, playerSessionId);
         }
 
         // Save to Redis
-        redisTemplate.opsForValue().set(redisKey, redisState, 2, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
 
 //        // TODO websocket Broadcast guess to all players
 //        GuessSubmittedMessageDto guessMessage = GuessSubmittedMessageDto.builder()
@@ -699,68 +688,78 @@ public class GameService {
                 .build();
     }
 
+
     /**
-     *  move to next round, add new item in rounds
-     * @param redisState update next round in redis
+     * get data from redis by game code
+     *
+     * @param redisKey input
+     * @return GameStateRedisModel
      */
-    private void startNextRound(GameStateRedisModel redisState) {
-        int nextRound = redisState.getCurrentRound() + 1;
-        redisState.setCurrentRound(nextRound);
-
-        // Switch drawer to next player
-        PlayerDto nextDrawer = getNextPlayerDto(redisState);
-
-        // set sessionId of next player
-        redisState.setCurrentDrawerSessionId(nextDrawer.getPlayerSessionId());
-
-        // Create new round
-        SpectateGameRoundDto newRound = SpectateGameRoundDto.builder()
-                .roundNumber(nextRound)
-                .drawerNickname(nextDrawer.getNickname())
-                .drawerPlayerSessionId(nextDrawer.getPlayerSessionId())
-                .selectedWord(null) // Not selected yet
-                .drawingData(null)
-                .containingText(null)
-                .guesses(new ArrayList<>()).build();
-
-
-        redisState.getRounds().add(newRound);
-
-        // TODO update websocket later Broadcast next round
-//        GameStateMessageDto nextRoundMessage = GameStateMessageDto.builder()
-//                .type("NEXT_ROUND")
-//                .gameCode(redisState.getGameCode())
-//                .currentRound(redisState.getCurrentRound() + 1)
-//                .maxRounds(redisState.getMaxRounds())
-//                .currentDrawer(nextDrawer.getNickname())
-//                .status(GameStatus.IN_PROGRESS)
-//                .build();
-//
-//        webSocketService.broadcastGameState(redisState.getGameCode(), nextRoundMessage);
-
-        log.info("Started round {}. Next drawer: {}", nextRound, nextDrawer.getNickname());
+    private GameStateRedisModel getGameStateFromRedis(String redisKey) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.convertValue(redisTemplate.opsForValue().get(redisKey), GameStateRedisModel.class);
+        } catch (Exception e) {
+            log.error("Failed to get from Redis: {}", e.getMessage());
+            return null;
+        }
     }
 
-    /**
-     * return next player dto
-     * @param redisState redis state
-     * @return next player dto
-     */
-    private static PlayerDto getNextPlayerDto(GameStateRedisModel redisState) {
-        List<PlayerDto> players = redisState.getPlayers();
-        String currentDrawerId = redisState.getCurrentDrawerSessionId();
 
-        // Find next player
-        int currentIndex = -1;
-        for (int i = 0; i < players.size(); i++) {
-            if (players.get(i).getPlayerSessionId().equals(currentDrawerId)) {
-                currentIndex = i;
-                break;
+    /**
+     * handle moving to next turn, next round or end game
+     * @param gameCode game code from path
+     * @param redisState redis model
+     * @param playerSessionId player session id submit
+     */
+    private void handleTurnTransition(String gameCode, GameStateRedisModel redisState, String playerSessionId) {
+        int totalPlayers = redisState.getPlayers().size(); // 1 or 2 players
+        int currentTurnNum = redisState.getCurrentTurnNum() != null ? redisState.getCurrentTurnNum() : 0;
+
+        // increase turn by 1
+        int nextTurnNum = currentTurnNum + 1;
+        // not finish yet, move to next turn in current round
+        if (nextTurnNum < totalPlayers) {
+            redisState.setCurrentRound(nextTurnNum);
+
+            PlayerDto nextDrawer = redisState.getPlayers().get(nextTurnNum); // nextTurnNum now = 1
+            redisState.setCurrentDrawerSessionId(nextDrawer.getPlayerSessionId());
+
+            SpectateGameRoundDto nextRoundDto = SpectateGameRoundDto.builder()
+                    .roundNumber(redisState.getCurrentRound())
+                    .drawerNickname(nextDrawer.getNickname())
+                    .drawerPlayerSessionId(nextDrawer.getPlayerSessionId())
+                    .guesses(new ArrayList<>())
+                    .containingText(null)
+                    .build();
+
+            redisState.getRounds().add(nextRoundDto);
+
+        } else {
+            // finish a round
+            redisState.setCurrentTurnNum(0); // 0 : back to drawer
+
+            if (redisState.getCurrentRound() < redisState.getMaxRounds()) {
+                int nextRoundNum = redisState.getCurrentRound() + 1;
+                redisState.setCurrentRound(nextRoundNum);
+
+                PlayerDto nextDrawer = redisState.getPlayers().get(0); // back to first player
+                redisState.setCurrentDrawerSessionId(nextDrawer.getPlayerSessionId());
+
+                SpectateGameRoundDto nextRoundDto = SpectateGameRoundDto.builder()
+                        .roundNumber(nextRoundNum)
+                        .drawerNickname(nextDrawer.getNickname())
+                        .drawerPlayerSessionId(nextDrawer.getPlayerSessionId())
+                        .guesses(new ArrayList<>())
+                        .containingText(null)
+                        .build();
+
+                redisState.getRounds().add(nextRoundDto);
+            } else {
+                finishGame(gameCode, redisState);
+
             }
         }
-
-        int nextIndex = (currentIndex + 1) % players.size();
-        return players.get(nextIndex);
     }
 
     /**
@@ -802,6 +801,54 @@ public class GameService {
         log.info("Game {} finished", gameCode);
     }
 
+    /**
+     * Save Round History to DB
+     * @param state redis model
+     * @param roundDto a round
+     * @param gameCode game code to save
+     */
+    private void saveRoundHistoryToDB(GameStateRedisModel state, SpectateGameRoundDto roundDto, String gameCode) {
+        Game game = gameRepository.findByGameCode(gameCode).orElse(null);
+        if (game == null) return;
+
+
+        GuessDto winningGuess = roundDto.getGuesses().stream()
+                .filter(GuessDto::getIsCorrect)
+                .findFirst()
+                .orElse(null); // Có thể null nếu hết giờ mà ko ai đoán đúng
+
+        GuessDto lastGuess = roundDto.getGuesses().get(roundDto.getGuesses().size() - 1);
+
+        int turnNum = state.getCurrentTurnNum() + 1; // 0: drawing, 1: guessing
+
+        RoundHistory history = RoundHistory.builder()
+                .game(game)
+                .roundNumber(roundDto.getRoundNumber())
+                .turnNumber(turnNum)
+                .wordSelected(roundDto.getSelectedWord())
+                .drawerPlayerSessionId(roundDto.getDrawerPlayerSessionId())
+                .drawerPlayerNickname(roundDto.getDrawerNickname())
+                .drawingData(roundDto.getDrawingData())
+                .drawingContainingText(roundDto.getContainingText())
+                .penaltyPoints(roundDto.getPenaltyPoints())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        if (winningGuess != null) {
+            history.setGuesserPlayerNickname(winningGuess.getPlayerNickname());
+            history.setGuesserPlayerSessionId(winningGuess.getPlayerSessionId());
+            history.setFinalGuess(winningGuess.getGuessedWord());
+            history.setIsCorrect(true);
+            history.setPointsEarned(winningGuess.getPointsEarned());
+            history.setPenaltyPoints(winningGuess.getPointsEarned());
+        } else {
+            history.setIsCorrect(false);
+            history.setPointsEarned(0);
+        }
+
+        roundHistoryRepository.save(history);
+    }
+
     private PlayerDto convertToPlayerDto(GuestPlayer player) {
         return new PlayerDto(player.getNickname(), player.getScore(), player.getIsHost(), player.getSessionId(), player.getJoinedOrder());
     }
@@ -840,7 +887,5 @@ public class GameService {
                 .startedAt(game.getStartedAt())
                 .finishedAt(game.getFinishedAt())
                 .build();
-
-
     }
 }

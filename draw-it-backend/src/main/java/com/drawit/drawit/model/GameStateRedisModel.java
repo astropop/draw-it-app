@@ -24,7 +24,9 @@ public class GameStateRedisModel implements Serializable {
     private String theme;
     private GameStatus status;
     private Integer maxRounds;
-    private Integer currentRound;
+    private Integer currentRound; // 1,2,3,4,5
+    private Integer currentTurnNum; // 0 : drawing, 1: guessing, increased by 1
+
     private Integer drawingTime;
     private Integer guessingTime;
 

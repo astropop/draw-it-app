@@ -13,12 +13,13 @@ import java.util.List;
 @NoArgsConstructor
 public class SpectateGameRoundDto {
     private Integer roundNumber;
+    private Integer turnNumber;
     private String drawerNickname;
     private String drawerPlayerSessionId;
     private String selectedWord;
     private String drawingData;
     private Integer drawingTime;
     private String containingText;
-
+    private Integer penaltyPoints; // image includes text
     private List<GuessDto> guesses;
 }

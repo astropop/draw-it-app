@@ -6,7 +6,8 @@ import lombok.Data;
 
 @Data
 public class SubmitDrawingRequestDto {
-    private Integer roundId;
+    private Integer roundNumber;
+    private Integer turnNumber;
     private String drawingData; // base64 image
     private String selectedWord;
     private Integer drawingTime; // time for drawing
