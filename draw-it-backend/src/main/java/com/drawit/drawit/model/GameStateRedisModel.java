@@ -30,7 +30,7 @@ public class GameStateRedisModel implements Serializable {
     private Integer drawingTime;
     private Integer guessingTime;
 
-    // Words with used status
+    // Words gen by AI
     private List<WordStatusDto> words = new ArrayList<>();
 
     // Players

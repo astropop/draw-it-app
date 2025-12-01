@@ -134,7 +134,6 @@ public class GameService {
         // convert to WordStatusDto
         List<WordStatusDto> words = rawWords.stream()
                 .map(w -> new WordStatusDto(w,
-                        false,
                         null,
                         null,
                         null))
@@ -230,9 +229,8 @@ public class GameService {
 
         log.info("Player {} joined game {}", player.getNickname(), request.getGameCode());
 
-        // get unused words
+        // get words
         List<String> availableWords = redisState.getWords().stream()
-                .filter(w -> !w.getUsed())
                 .map(WordStatusDto::getWord)
                 .collect(Collectors.toList());
 
@@ -327,9 +325,9 @@ public class GameService {
             throw new RuntimeException("You are not in this game");
         }
 
-        // Return available words (not used) in redis
+        // Return available words redis
         List<String> availableWords = redisState.getWords().stream()
-                .filter(w -> !w.getUsed()).map(WordStatusDto::getWord)
+                .map(WordStatusDto::getWord)
                 .collect(Collectors.toList());
 
         return GameResponseDto.builder()
@@ -436,7 +434,7 @@ public class GameService {
 
         log.info("Game {} started. First drawer: {} , player sessionid: {}", gameCode, firstRound.getDrawerNickname(), firstDrawer.getPlayerSessionId());
 
-        // Return word into response, for player choosing, start game, every word are unused
+        // Return word into response
         List<String> availableWords = redisState.getWords().stream()
                 .map(WordStatusDto::getWord)
                 .collect(Collectors.toList());
@@ -503,10 +501,9 @@ public class GameService {
             throw new RuntimeException("Not your turn to draw");
         }
 
-        // Check if word already used
+        // Check if word correct
         Optional<WordStatusDto> wordOpt = redisState.getWords().stream()
-                .filter(w -> w.getWord()
-                .equalsIgnoreCase(request.getSelectedWord()))
+                .filter(w -> w.getWord().equalsIgnoreCase(request.getSelectedWord()))
                 .findFirst();
 
         if (wordOpt.isEmpty()) {
@@ -514,9 +511,6 @@ public class GameService {
         }
 
         WordStatusDto wordStatus = wordOpt.get();
-        if (wordStatus.getUsed()) {
-            throw new RuntimeException("Word already used in round " + wordStatus.getUsedInRound());
-        }
 
         // OCR check for keyword text, call AI to check image
         String containingKeyword = ocrService.containingKeywordText(request.getDrawingData(), request.getSelectedWord());
@@ -539,7 +533,6 @@ public class GameService {
         }
 
         // Mark word as used
-        wordStatus.setUsed(true);
         wordStatus.setUsedInRound(redisState.getCurrentRound());
         wordStatus.setUsedByPlayerNickname(drawer.getNickname());
         wordStatus.setUsedByPlayerSessionId(drawer.getPlayerSessionId());
@@ -863,10 +856,10 @@ public class GameService {
         List<GuestPlayer> players = guestPlayerRepository.findByGameAndIsActiveTrueOrderByJoinedOrderAsc(game);
         List<PlayerDto> playerDtos = players.stream().map(this::convertToPlayerDto).collect(Collectors.toList());
 
-        // Reconstruct words (simplified - assume not used if game not started)
+        // Reconstruct words
         List<String> rawWords = huggingFaceService.getOrCreateKeywords(game.getTheme(), game.getMaxRounds() + 3);
         List<WordStatusDto> words = rawWords.stream()
-                .map(w -> new WordStatusDto(w, false, null, null,null))
+                .map(w -> new WordStatusDto(w,  null, null,null))
                 .collect(Collectors.toList());
 
         return GameStateRedisModel.builder()
