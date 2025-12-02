@@ -678,9 +678,8 @@ public class GameService {
         currentRound.getGuesses().add(guessDto);
 
         // guess correct move to next step
-        // guess = 1 => finish a round
-//        boolean roundComplete = currentRound.getGuesses().size() >= (redisState.getPlayers().size() - 1);
-        if (isCorrect) {
+        // or time out
+        if (isCorrect || (redisState.getGuessingTime() - request.getGuessingTime() <= 0 )) {
             // save history to db
             saveRoundHistoryToDB(redisState, currentRound, gameCode);
             // handle turn
