@@ -1,5 +1,4 @@
-package com.drawit.drawit.dto;
-
+package com.drawit.drawit.dto.getgamelist;
 
 import com.drawit.drawit.enums.GameStatus;
 import lombok.AllArgsConstructor;
@@ -7,19 +6,21 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
+/**
+ * response for displaying FE
+ */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class GameSpectatorDto {
+public class GameListItemResponseDto {
     private String gameCode;
     private String theme;
     private GameStatus status;
-    private Integer currentRound;
-    private Integer maxRounds;
-    private List<PlayerDto> players;
-    private RoundSpectatorDto currentRoundInfo;
-    private List<RoundSpectatorDto> allRounds;
+    private Integer playerCount;
+    private LocalDateTime createdAt;
+    private LocalDateTime startedAt;
+    private LocalDateTime finishedAt;
 }

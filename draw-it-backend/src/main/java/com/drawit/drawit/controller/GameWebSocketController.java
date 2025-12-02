@@ -1,6 +1,6 @@
 package com.drawit.drawit.controller;
 
-import com.drawit.drawit.dto.websocket.DrawingSubmittedMessageDto;
+import com.drawit.drawit.dto.websocket.DrawingSubmitMessageDto;
 import com.drawit.drawit.dto.websocket.KickPlayerRequestDto;
 import com.drawit.drawit.service.GameWebSocketService;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +45,7 @@ public class GameWebSocketController {
     @MessageMapping("/game/{gameCode}/drawing-submitted")
     public void drawingSubmitted(
             @DestinationVariable String gameCode,
-            @Payload DrawingSubmittedMessageDto message,
+            @Payload DrawingSubmitMessageDto message,
             SimpMessageHeaderAccessor headerAccessor
     ) {
         String sessionId = getSessionId(headerAccessor);

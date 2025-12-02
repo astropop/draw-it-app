@@ -1,21 +1,18 @@
-package com.drawit.drawit.dto;
+package com.drawit.drawit.dto.websocket;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RoundSpectatorDto {
-    private Integer roundNumber;
+public class DrawingSubmitMessageDto {
+    private Integer roundId;
     private String drawer;
-    private String selectedWord;
-    private String drawingData;
+    private String drawingData; // base64 image
     private Boolean containsText;
-    private List<GuessDto> guesses;
+    private Boolean containsKeyword;
 }

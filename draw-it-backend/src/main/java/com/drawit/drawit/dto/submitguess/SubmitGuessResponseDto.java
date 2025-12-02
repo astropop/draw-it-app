@@ -1,4 +1,4 @@
-package com.drawit.drawit.dto;
+package com.drawit.drawit.dto.submitguess;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,5 +13,4 @@ public class SubmitGuessResponseDto {
     private Boolean isCorrect;
     private Integer pointsEarned;
     private String correctWord;
-    private Boolean roundComplete;
 }

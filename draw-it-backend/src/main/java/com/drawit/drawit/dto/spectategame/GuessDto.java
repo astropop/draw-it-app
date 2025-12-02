@@ -1,4 +1,4 @@
-package com.drawit.drawit.dto;
+package com.drawit.drawit.dto.spectategame;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +13,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class GuessDto {
     private String playerNickname;
-    private String guess;
+    private String playerSessionId;
+    private String guessedWord;
     private Boolean isCorrect;
     private Integer pointsEarned;
     private LocalDateTime submittedAt;

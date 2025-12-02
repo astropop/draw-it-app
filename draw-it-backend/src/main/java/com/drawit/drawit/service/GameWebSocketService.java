@@ -8,7 +8,6 @@ import com.drawit.drawit.repository.GuestPlayerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -37,7 +36,7 @@ public class GameWebSocketService {
         PlayerUpdateMessageDto message = PlayerUpdateMessageDto.builder()
                 .type("PLAYER_JOINED")
                 .nickname(player.getNickname())
-                .sessionId(player.getSessionId())
+                .sessionId(player.getPlayerSessionId())
                 .score(player.getScore())
                 .build();
 
@@ -97,7 +96,7 @@ public class GameWebSocketService {
         GameStateRedisModel redisState = getGameStateFromRedis("game::" + gameCode);
 
         if (redisState != null) {
-            redisState.getPlayers().removeIf(p -> p.getSessionId().equals(targetSessionId));
+            redisState.getPlayers().removeIf(p -> p.getPlayerSessionId().equals(targetSessionId));
             redisTemplate.opsForValue().set("game::" + gameCode, redisState);
         }
 
@@ -124,7 +123,7 @@ public class GameWebSocketService {
      * Broadcast drawing submitted
      * Topic: /topic/game/{gameCode}/drawing
      */
-    public void broadcastDrawing(String gameCode, DrawingSubmittedMessageDto message) {
+    public void broadcastDrawing(String gameCode, DrawingSubmitMessageDto message) {
         messagingTemplate.convertAndSend(
                 "/topic/game/" + gameCode + "/drawing",
                 message

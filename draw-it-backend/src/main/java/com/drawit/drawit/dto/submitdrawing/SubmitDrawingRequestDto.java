@@ -1,4 +1,4 @@
-package com.drawit.drawit.dto;
+package com.drawit.drawit.dto.submitdrawing;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -6,15 +6,10 @@ import lombok.Data;
 
 @Data
 public class SubmitDrawingRequestDto {
-    @NotNull(message = "Round ID required")
-    private Integer roundId;
-
-    @NotBlank(message = "Drawing data required")
+    private Integer roundNumber;
+    private Integer turnNumber;
     private String drawingData; // base64 image
-
-    @NotBlank(message = "Selected word required")
     private String selectedWord;
-
-    @NotBlank
+    private Integer drawingTime; // time for drawing
     private String playerSessionId;
 }
