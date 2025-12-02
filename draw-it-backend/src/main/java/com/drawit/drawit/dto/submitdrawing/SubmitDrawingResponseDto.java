@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 public class SubmitDrawingResponseDto {
     private Boolean success;
     private String containingKeyword;
-//    private String warning;
     private Integer pointsPenalty;
     private String nextDrawerPlayerSessionId;
 }

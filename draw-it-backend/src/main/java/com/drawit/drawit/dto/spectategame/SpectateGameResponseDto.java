@@ -19,7 +19,8 @@ public class SpectateGameResponseDto {
     private String gameCode;
     private String theme;
     private GameStatus status;
-    private Integer currentRound;
+    private Integer currentRoundNumber;
+    private Integer currentTurnNumber;
     private Integer maxRounds;
     private List<PlayerDto> playersInGame;
 

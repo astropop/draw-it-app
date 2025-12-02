@@ -6,8 +6,9 @@ import lombok.Data;
 
 @Data
 public class SubmitGuessRequestDto {
-    private Integer roundId;
-    private String playerSessionId;
-    private String guess;
+    private Integer roundNumber;
+    private Integer turnNumber;
+    private String guess; // guessing text
     private Integer guessingTime; // time for drawing
+    private String playerSessionId;
 }

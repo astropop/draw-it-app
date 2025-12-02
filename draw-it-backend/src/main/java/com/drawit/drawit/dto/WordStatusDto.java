@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class WordStatusDto {
     private String word;
     private Integer usedInRound;
+    private Integer usedInTurn;
     private String usedByPlayerSessionId;
     private String usedByPlayerNickname;
 }

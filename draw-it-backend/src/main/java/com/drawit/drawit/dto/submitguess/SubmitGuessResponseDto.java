@@ -13,5 +13,4 @@ public class SubmitGuessResponseDto {
     private Boolean isCorrect;
     private Integer pointsEarned;
     private String correctWord;
-    private Boolean roundComplete;
 }

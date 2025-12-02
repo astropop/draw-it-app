@@ -25,10 +25,11 @@ public class GameResponseDto {
     private String theme;
     private Integer maxRounds;
     private Integer currentRound;
-    private Integer currentTurnNumber; // start by 0
+    private Integer currentTurnNumber; // start by 1
     private Integer drawingTime;
     private Integer guessingTime;
     private Boolean isHost;
     private List<PlayerDto> players;
     private String currentDrawerSessionId; // TODO drawer, missed guesser
+    private String action = "wait";  // draw, wait, guess. default is wait
 }

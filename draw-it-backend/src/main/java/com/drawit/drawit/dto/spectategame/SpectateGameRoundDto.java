@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -21,5 +22,6 @@ public class SpectateGameRoundDto {
     private Integer drawingTime;
     private String containingText;
     private Integer penaltyPoints; // image includes text
+    private LocalDateTime submitAt;
     private List<GuessDto> guesses;
 }
