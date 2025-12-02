@@ -17,7 +17,7 @@ async function getGameData(code: string) {
       notFound();
     }
 
-    // ✅ Support different views based on code suffix
+    // Support different views based on code suffix
     // WAITING games
     if ("roomAsHost" in mockGame) {
       if (code.endsWith("_HOST") || code.endsWith("_PLAYER")) {
