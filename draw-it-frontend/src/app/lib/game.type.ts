@@ -38,15 +38,6 @@ export interface GameResponseDto {
   action: string;
 }
 
-// Player Types
-export interface PlayerDTO {
-  nickname: string;
-  score: number;
-  isHost: boolean;
-  sessionId: string;
-  joinedOrder?: number;
-}
-
 export interface GuestPlayer {
   id: number;
   nickname: string;
@@ -113,11 +104,6 @@ export interface GameSpectatorDTO {
   players: PlayerDTO[];
   currentRoundInfo?: RoundSpectatorDTO;
   allRounds?: RoundSpectatorDTO[];
-}
-
-export interface JoinGameRequest {
-  gameCode: string;
-  nickname: string;
 }
 
 export interface SubmitDrawingRequest {
