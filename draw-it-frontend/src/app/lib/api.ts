@@ -1,14 +1,4 @@
 "use server";
-import { getMockGameByCode } from "../mock/mockdata.unified";
-import {
-  GameResponseDto,
-  GameSpectatorDTO,
-  JoinGameRequest,
-  SubmitDrawingRequest,
-  SubmitDrawingResponse,
-  SubmitGuessRequest,
-} from "./game.type";
-import { isUseMockApi, mockApiResponses } from "./mockApi";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -89,16 +79,4 @@ export async function fetchApi<T>(
 //     });
 //   },
 
-//   spectateGame: async (gameCode: string): Promise<GameSpectatorDTO> => {
-//     if (isUseMockApi()) {
-//       return new Promise((resolve) => {
-//         resolve(getMockGameByCode(gameCode).spectator);
-//       });
-//     }
-//     return await fetchApi(`/api/games/${gameCode}/spectate`, { method: "GET" });
-//   },
-
-//   getGame: async (gameCode: string): Promise<GameResponseDto> => {
-//     return await fetchApi(`/api/games/${gameCode}`, { method: "GET" });
-//   },
 // };
