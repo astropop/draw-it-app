@@ -1,12 +1,12 @@
 // GameLobby
 "use client";
 
-import { gameApi } from "@/app/lib/api";
-import { GameItemList } from "@/app/types/game.type";
+import { getGameList } from "@/app/api/GetGameList/fetcher";
+import { GameListItemResponseDto } from "@/app/api/GetGameList/type";
+import { GameStatus } from "@/app/types/game.type";
 import { Box, Button, Container, Grid, Typography } from "@mui/material";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import GameCard from "./GameCard";
 
 // const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -14,28 +14,22 @@ import GameCard from "./GameCard";
 export default function GameLobby({
   initialGames,
 }: {
-  initialGames: GameItemList[];
+  initialGames: GameListItemResponseDto[];
 }) {
-  const [games, setGames] = useState<GameItemList[]>(initialGames);
-  const router = useRouter();
+  const [games, setGames] = useState<GameListItemResponseDto[]>(initialGames);
 
-  useEffect(() => {
-    // Poll for updates every 5 seconds
-    const interval = setInterval(async () => {
-      const updatedGames = await gameApi.getGameList();
-      setGames(updatedGames);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const handleRefresh = async () => {
+    const updatedGames = await getGameList();
+    setGames(updatedGames);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "WAITING":
+      case GameStatus.WAITING:
         return "info";
-      case "IN_PROGRESS":
+      case GameStatus.IN_PROGRESS:
         return "warning";
-      case "FINISHED":
+      case GameStatus.FINISHED:
         return "success";
       default:
         return "default";
@@ -44,12 +38,12 @@ export default function GameLobby({
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "WAITING":
-        return "Đang chờ";
-      case "IN_PROGRESS":
-        return "Đang chơi";
-      case "FINISHED":
-        return "Đã kết thúc";
+      case GameStatus.WAITING:
+        return "Waiting";
+      case GameStatus.IN_PROGRESS:
+        return "In Progress";
+      case GameStatus.FINISHED:
+        return "Finished";
       default:
         return status;
     }
@@ -65,12 +59,17 @@ export default function GameLobby({
           alignItems: "center",
         }}
       >
-        <Typography variant='h4'>Danh sách Game</Typography>
+        <Box sx={{ gap: 1, display: "flex", alignItems: "center" }}>
+          <Typography variant='h4'>Game List</Typography>
+          <Button variant='outlined' onClick={handleRefresh}>
+            Refresh
+          </Button>
+        </Box>
         <Box sx={{ gap: 1, display: "flex", alignItems: "center" }}>
           <Button component={Link} href='/join' variant='contained'>
             Join Game
           </Button>
-          <Button variant='contained' onClick={() => router.push("/create")}>
+          <Button component={Link} href='/create' variant='contained'>
             Create
           </Button>
         </Box>
@@ -91,7 +90,7 @@ export default function GameLobby({
       {games.length === 0 && (
         <Box sx={{ textAlign: "center", py: 8 }}>
           <Typography variant='h6' color='text.secondary'>
-            Chưa có game nào. Hãy tạo game đầu tiên!
+            No games available. Be the first to create one!
           </Typography>
         </Box>
       )}

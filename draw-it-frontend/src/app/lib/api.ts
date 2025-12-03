@@ -1,7 +1,6 @@
-import { getMockGameByCode, mockGamesLobby } from "../mock/mockdata.unified";
+import { getMockGameByCode } from "../mock/mockdata.unified";
 import {
   CreateGameRequest,
-  GameItemList,
   GameResponseDTO,
   GameSpectatorDTO,
   JoinGameRequest,
@@ -9,7 +8,7 @@ import {
   SubmitDrawingResponse,
   SubmitGuessRequest,
 } from "../types/game.type";
-import { mockApiResponses, isUseMockApi } from "./mockApi";
+import { isUseMockApi, mockApiResponses } from "./mockApi";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -116,16 +115,6 @@ export const gameApi = {
       method: "POST",
       body: JSON.stringify(data),
     });
-  },
-
-  // Get Game list
-  getGameList: async (): Promise<GameItemList[]> => {
-    if (isUseMockApi()) {
-      return new Promise((resolve) => {
-        resolve(mockGamesLobby);
-      });
-    }
-    return await fetchApi("/api/games/list", { method: "GET" });
   },
 
   spectateGame: async (gameCode: string): Promise<GameSpectatorDTO> => {
