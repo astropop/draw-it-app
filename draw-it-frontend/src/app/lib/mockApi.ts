@@ -7,7 +7,7 @@ import {
   GameStatus,
   JoinGameRequest,
   SubmitDrawingResponse,
-} from "../types/game.type";
+} from "./game.type";
 
 export const mockApiResponses = {
   createGame: (request: CreateGameRequest): GameResponseDTO => ({

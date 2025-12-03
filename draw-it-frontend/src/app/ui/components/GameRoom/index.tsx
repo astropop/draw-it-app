@@ -4,7 +4,7 @@
 import { useWebSocket } from "@/app/hooks/useWebSocket";
 import { useMockWebSocket } from "@/app/hooks/useWebSocket.mock";
 import { gameApi } from "@/app/lib/api";
-import { GameResponseDTO, GameStatus } from "@/app/types/game.type";
+import { GameResponseDTO, GameStatus } from "@/app/lib/game.type";
 import { Card, CardContent, Container, Grid } from "@mui/material";
 import { useEffect, useState } from "react";
 import GameArea from "./GameArea";

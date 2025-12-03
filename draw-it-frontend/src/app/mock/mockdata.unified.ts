@@ -8,7 +8,7 @@ import {
   GameResponseDTO,
   GuessDTO,
   RoundSpectatorDTO,
-} from "../types/game.type";
+} from "../lib/game.type";
 
 // ============================================
 // GAME 1: WAITING - Host có nút Start

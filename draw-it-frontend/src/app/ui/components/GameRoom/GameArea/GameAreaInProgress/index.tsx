@@ -7,7 +7,7 @@ import {
   TextField,
 } from "@mui/material";
 import DrawingCanvas from "../../../DrawingCanvas";
-import { GameResponseDTO } from "@/app/types/game.type";
+import { GameResponseDTO } from "@/app/lib/game.type";
 import Image from "next/image";
 
 export type GameAreaInProgressProps = {

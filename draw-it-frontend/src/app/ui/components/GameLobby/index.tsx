@@ -3,7 +3,7 @@
 
 import { getGameList } from "@/app/lib/api/GetGameList/fetcher";
 import { GameListItemResponseDto } from "@/app/lib/api/GetGameList/type";
-import { GameStatus } from "@/app/types/game.type";
+import { GameStatus } from "@/app/lib/game.type";
 import { Box, Button, Container, Grid, Typography } from "@mui/material";
 import Link from "next/link";
 import { useState } from "react";

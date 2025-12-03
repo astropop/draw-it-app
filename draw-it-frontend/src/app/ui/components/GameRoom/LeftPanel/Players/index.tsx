@@ -1,4 +1,4 @@
-import { GameResponseDTO, GameStatus, PlayerDTO } from "@/app/types/game.type";
+import { GameResponseDTO, GameStatus, PlayerDTO } from "@/app/lib/game.type";
 import {
   Box,
   Typography,

@@ -1,4 +1,4 @@
-import { GameResponseDTO, PlayerDTO } from "@/app/types/game.type";
+import { GameResponseDTO, PlayerDTO } from "@/app/lib/game.type";
 import { Box, Typography } from "@mui/material";
 
 export type GameAreaWaitingProps = {

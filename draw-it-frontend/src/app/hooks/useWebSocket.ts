@@ -12,7 +12,7 @@ import {
   KickPlayerResponse,
   PlayerUpdateMessage,
   PlayerListUpdate,
-} from "../types/game.type";
+} from "../lib/game.type";
 
 // export interface WebSocketMessage {
 //   type: string;

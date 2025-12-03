@@ -18,7 +18,7 @@ import {
   game2RoomAsDrawer,
   game2RoomAsGuesser,
 } from "../mock/mockdata.unified";
-import { GameResponseDTO } from "../types/game.type";
+import { GameResponseDTO } from "../lib/game.type";
 import GameRoom from "../ui/components/GameRoom";
 
 type ScenarioKey = "host" | "player" | "wordSelection" | "drawing" | "guessing";

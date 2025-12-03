@@ -2,7 +2,7 @@
 "use client";
 
 import { useWebSocket } from "@/app/hooks/useWebSocket";
-import { GameSpectatorDTO } from "@/app/types/game.type";
+import { GameSpectatorDTO } from "@/app/lib/game.type";
 import { useState } from "react";
 import FinishedSpectator from "./FinishedSpectator";
 import InProgressSpectator from "./InProgressSpectator";

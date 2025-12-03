@@ -1,4 +1,4 @@
-import { GameResponseDTO, GameStatus } from "@/app/types/game.type";
+import { GameResponseDTO, GameStatus } from "@/app/lib/game.type";
 import { Paper, Grid, Typography, Chip, Stack } from "@mui/material";
 import { connected } from "process";
 

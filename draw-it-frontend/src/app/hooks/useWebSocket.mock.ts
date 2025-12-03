@@ -5,7 +5,7 @@ import {
   GameStateMessage,
   GuessSubmittedMessage,
   PlayerDTO,
-} from "../types/game.type";
+} from "../lib/game.type";
 
 export function useMockWebSocket(gameCode: string | null) {
   const [connected] = useState(true);

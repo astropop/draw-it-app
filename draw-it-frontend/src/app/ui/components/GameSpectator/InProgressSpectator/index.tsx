@@ -1,4 +1,4 @@
-import { GameSpectatorDTO, GuessSubmittedMessage } from "@/app/types/game.type";
+import { GameSpectatorDTO, GuessSubmittedMessage } from "@/app/lib/game.type";
 import {
   Alert,
   Box,

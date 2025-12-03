@@ -1,4 +1,4 @@
-import { PlayerDTO } from "@/app/types/game.type";
+import { PlayerDTO } from "@/app/lib/game.type";
 import { Divider, Button, Typography } from "@mui/material";
 
 export type StartButtonProps = {

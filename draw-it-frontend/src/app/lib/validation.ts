@@ -1,6 +1,6 @@
 // app/lib/validations.ts
 import { z } from "zod";
-import { GameMode } from "../types/game.type";
+import { GameMode } from "./game.type";
 
 // Validation schema Creating game
 export const createGameSchema = z.object({

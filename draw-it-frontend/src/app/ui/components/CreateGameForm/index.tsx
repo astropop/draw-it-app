@@ -3,7 +3,7 @@
 
 import { gameApi } from "@/app/lib/api";
 import { CreateGameInput, createGameSchema } from "@/app/lib/validation";
-import { GameMode } from "@/app/types/game.type";
+import { GameMode } from "@/app/lib/game.type";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,

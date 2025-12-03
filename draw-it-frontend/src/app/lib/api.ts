@@ -7,7 +7,7 @@ import {
   SubmitDrawingRequest,
   SubmitDrawingResponse,
   SubmitGuessRequest,
-} from "../types/game.type";
+} from "./game.type";
 import { isUseMockApi, mockApiResponses } from "./mockApi";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;

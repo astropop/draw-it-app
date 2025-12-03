@@ -1,4 +1,4 @@
-import { GameSpectatorDTO } from "@/app/types/game.type";
+import { GameSpectatorDTO } from "@/app/lib/game.type";
 import {
   Box,
   Typography,
