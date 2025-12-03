@@ -3,7 +3,7 @@
 import { Box, Card, CardContent, Chip, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import ButtonGameCard from "./_components/ButtonGameCard";
-import { GameListItemResponseDto } from "@/app/api/GetGameList/type";
+import { GameListItemResponseDto } from "@/app/lib/api/GetGameList/type";
 import { GameStatus } from "@/app/types/game.type";
 
 type GameCardProps = {

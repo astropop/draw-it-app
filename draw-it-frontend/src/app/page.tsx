@@ -1,4 +1,4 @@
-import { getGameList } from "./api/GetGameList/fetcher";
+import { getGameList } from "./lib/api/GetGameList/fetcher";
 import styles from "./page.module.css";
 import GameLobby from "./ui/components/GameLobby";
 import HomePage from "./ui/components/HomePage";
