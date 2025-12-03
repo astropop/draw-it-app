@@ -1,10 +1,9 @@
 "use client";
 
-import { Box, Card, CardContent, Chip, Typography } from "@mui/material";
-import { useRouter } from "next/navigation";
-import ButtonGameCard from "./_components/ButtonGameCard";
 import { GameListItemResponseDto } from "@/app/lib/api/GetGameList/type";
 import { GameStatus } from "@/app/lib/game.type";
+import { Box, Card, CardContent, Chip, Typography } from "@mui/material";
+import ButtonGameCard from "./_components/ButtonGameCard";
 
 type GameCardProps = {
   game: GameListItemResponseDto;
@@ -22,12 +21,10 @@ type GameCardProps = {
 };
 
 const GameCard = ({ game, getStatusLabel, getStatusColor }: GameCardProps) => {
-  const router = useRouter();
   return (
     <>
       <Card
         sx={{
-          cursor: "pointer",
           "&:hover": { boxShadow: 6 },
           border: "1px solid gray",
         }}

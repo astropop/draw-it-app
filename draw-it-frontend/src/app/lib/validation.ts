@@ -2,6 +2,9 @@
 import { z } from "zod";
 import { GameMode } from "./game.type";
 
+/**
+ * CREATE GAME VALIDATIONS
+ */
 // Validation schema Creating game
 export const createGameSchema = z.object({
   hostNickname: z
@@ -12,23 +15,24 @@ export const createGameSchema = z.object({
     .string()
     .min(1, "Theme is required")
     .max(100, "Theme must be from 1 - 100 characters"),
-  // language: z.enum(["English", "Vietnamese", "Spanish", "French", "Japanese"]),
   maxRounds: z.number().min(1).max(5),
   drawingTime: z.number().min(30).max(300),
   guessingTime: z.number().min(30).max(180),
   gameMode: z.enum(GameMode),
-  // turnMode: z.enum(TurnMode).optional(), TODO update in next sprint
 });
 
 export type CreateGameInput = z.infer<typeof createGameSchema>;
 
+/**
+ * JOIN GAME VALIDATIONS
+ */
 // Validation schema joining game
 export const joinGameSchema = z.object({
   gameCode: z
     .string()
-    .min(8, "Game code must be 8 characters")
-    .max(8, "Game code must be 8 characters")
-    .regex(/^[A-Z0-9]+$/, "Game code must contain only letters and numbers"),
+    .min(10, "Game code must be 10 characters")
+    .max(10, "Game code must be 10 characters")
+    .regex(/^[A-Za-z0-9]+$/, "Game code must contain only letters and numbers"),
   nickname: z
     .string()
     .min(1, "Nickname is required")

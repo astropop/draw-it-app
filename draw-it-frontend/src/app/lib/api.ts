@@ -1,7 +1,6 @@
 import { getMockGameByCode } from "../mock/mockdata.unified";
 import {
-  CreateGameRequest,
-  GameResponseDTO,
+  GameResponseDto,
   GameSpectatorDTO,
   JoinGameRequest,
   SubmitDrawingRequest,
@@ -26,7 +25,6 @@ export async function fetchApi<T>(
 
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
-    credentials: "include", // Gửi session cookie
     headers,
     cache: "no-store",
   });
@@ -43,22 +41,9 @@ export async function fetchApi<T>(
 
 export const gameApi = {
   //CreateGameRequest
-  createGame: async (data: CreateGameRequest): Promise<GameResponseDTO> => {
-    // Use mock if enabled
-    if (isUseMockApi()) {
-      return new Promise((resolve) => {
-        resolve(mockApiResponses.createGame(data));
-      });
-    }
-
-    return await fetchApi<GameResponseDTO>("/api/games/create", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  },
 
   // JoinGameRequest
-  joinGame: async (data: JoinGameRequest): Promise<GameResponseDTO> => {
+  joinGame: async (data: JoinGameRequest): Promise<GameResponseDto> => {
     // Use mock if enabled
     if (isUseMockApi()) {
       return new Promise((resolve) => {
@@ -126,7 +111,7 @@ export const gameApi = {
     return await fetchApi(`/api/games/${gameCode}/spectate`, { method: "GET" });
   },
 
-  getGame: async (gameCode: string): Promise<GameResponseDTO> => {
+  getGame: async (gameCode: string): Promise<GameResponseDto> => {
     return await fetchApi(`/api/games/${gameCode}`, { method: "GET" });
   },
 };

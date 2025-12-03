@@ -8,13 +8,34 @@ export enum GameStatus {
 }
 
 export enum GameMode {
-  MULTIPLAYER = "MULTIPLAYER",
+  // MULTIPLAYER = "MULTIPLAYER",
   VERSUS = "VERSUS",
 }
 
-export enum TurnMode {
-  SEQUENTIAL = "SEQUENTIAL",
-  RANDOM = "RANDOM",
+export interface PlayerDto {
+  nickname: string;
+  score: number;
+  isHost: boolean;
+  playerSessionId: string;
+  joinedOrder: number;
+}
+
+export interface GameResponseDto {
+  gameId: number;
+  gameCode: string;
+  words: string[];
+  playerSessionId: string;
+  status: GameStatus;
+  theme: string;
+  maxRounds: number;
+  currentRound: number;
+  currentTurnNumber: number;
+  drawingTime: number;
+  guessingTime: number;
+  isHost: boolean;
+  players: PlayerDto[];
+  currentDrawerSessionId: string;
+  action: string;
 }
 
 // Player Types
@@ -48,7 +69,7 @@ export interface Game {
   currentRound: number;
   drawingTime: number;
   guessingTime: number;
-  turnMode: TurnMode;
+
   hostId: number;
   createdAt: string;
   startedAt?: string;
@@ -63,23 +84,6 @@ export interface GameListItemDTO {
   createdAt: string;
   startedAt?: string;
   finishedAt?: string;
-}
-
-export interface GameResponseDTO {
-  gameId: number;
-  gameCode: string;
-  words: string[];
-  sessionId: string;
-  status: GameStatus;
-  theme?: string;
-  // language?: string;
-  maxRounds?: number;
-  currentRound?: number;
-  drawingTime?: number;
-  guessingTime?: number;
-  isHost?: boolean;
-  players: PlayerDTO[];
-  currentDrawerSessionId?: string;
 }
 
 // Round Types
@@ -109,18 +113,6 @@ export interface GameSpectatorDTO {
   players: PlayerDTO[];
   currentRoundInfo?: RoundSpectatorDTO;
   allRounds?: RoundSpectatorDTO[];
-}
-
-// Request Types
-export interface CreateGameRequest {
-  hostNickname: string;
-  theme: string;
-  // language: string;
-  maxRounds: number;
-  drawingTime: number;
-  guessingTime: number;
-  gameMode: GameMode;
-  // turnMode: TurnMode;
 }
 
 export interface JoinGameRequest {
