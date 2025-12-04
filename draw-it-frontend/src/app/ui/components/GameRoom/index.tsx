@@ -6,6 +6,8 @@ import { Card, CardContent, Container, Grid } from "@mui/material";
 import { useEffect, useState } from "react";
 import Instructions from "./RightPanel/Instructions";
 import RoomHeader from "./RoomHeader";
+import Players from "./LeftPanel/Players";
+import StartButton from "./LeftPanel/StartButton";
 
 type GameRoomProps = {
   gameData: GameResponseDto;
@@ -17,20 +19,35 @@ const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 export default function GameRoom({ gameData }: GameRoomProps) {
   // State management
-  const [currentSessionId, setCurrentSessionId] = useState<string>("");
+  const [currentPlayerSessionId, setCurrentPlayerSessionId] =
+    useState<string>("");
   const [currentNickname, setCurrentNickname] = useState<string>("");
   const [localGameState, setLocalGameState] =
     useState<GameResponseDto>(gameData); // updateable game state
 
+  // useefect
   // Initialize session from localStorage
   useEffect(() => {
     const sessionId =
       localStorage.getItem("playerSessionId") || gameData.playerSessionId;
     const nickname = localStorage.getItem("nickname") || "";
 
-    setCurrentSessionId(sessionId);
+    setCurrentPlayerSessionId(sessionId);
     setCurrentNickname(nickname);
   }, []);
+
+  // const area
+  const isHost = gameData.isHost;
+
+  // functions
+  const handleKick = async (targetPlayerSessionId: string) => {
+    // Call API kick player
+  };
+
+  const handleStartGame = async (currentPlayerSessionId: string) => {
+    if (localGameState.players.length < 2) alert("Please wait another player");
+    // Call API start game
+  };
 
   return (
     <Container maxWidth='xl' sx={{ py: 3 }}>
@@ -47,23 +64,25 @@ export default function GameRoom({ gameData }: GameRoomProps) {
           <Card>
             <CardContent>
               {/* Players  */}
-              {/* <Players
+              <Players
                 props={{
-                  currentPlayers,
                   localGameState,
                   isHost,
                   handleKick,
-                  isMyTurn,
-                  currentSessionId,
+                  currentPlayerSessionId,
                 }}
-              /> */}
-              Player list
-              <br></br>
-              Start button
+              />
+
               {/* START BUTTON - Only for host in WAITING status */}
-              {/* {isHost && localGameState.status === GameStatus.WAITING && (
-                <StartButton props={{ currentPlayers, handleStartGame }} />
-              )} */}
+              {isHost && localGameState.status === GameStatus.WAITING && (
+                <StartButton
+                  props={{
+                    localGameState,
+                    handleStartGame,
+                    currentPlayerSessionId,
+                  }}
+                />
+              )}
             </CardContent>
           </Card>
           {/* Timer */}
