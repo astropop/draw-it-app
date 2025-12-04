@@ -4,10 +4,12 @@
 import { GameResponseDto, GameStatus } from "@/app/lib/game.type";
 import { Card, CardContent, Container, Grid } from "@mui/material";
 import { useEffect, useState } from "react";
-import Instructions from "./RightPanel/Instructions";
-import RoomHeader from "./RoomHeader";
+import GameAreaInProgress from "./GameArea/GameAreaInProgress";
+import GameAreaWaiting from "./GameArea/GameAreaWaiting";
 import Players from "./LeftPanel/Players";
 import StartButton from "./LeftPanel/StartButton";
+import Instructions from "./RightPanel/Instructions";
+import RoomHeader from "./RoomHeader";
 
 type GameRoomProps = {
   gameData: GameResponseDto;
@@ -36,7 +38,7 @@ export default function GameRoom({ gameData }: GameRoomProps) {
     setCurrentNickname(nickname);
   }, []);
 
-  // const area
+  // constants area
   const isHost = gameData.isHost;
 
   // functions
@@ -85,6 +87,7 @@ export default function GameRoom({ gameData }: GameRoomProps) {
               )}
             </CardContent>
           </Card>
+          <Instructions />
           {/* Timer */}
           {/* {timerType && timeLeft > 0 && (
             <Timer props={{ timerType, timeLeft, localGameState }} />
@@ -94,13 +97,16 @@ export default function GameRoom({ gameData }: GameRoomProps) {
         </Grid>
 
         {/* Middle Panel - Game Area */}
-        <Grid sx={{ xs: 12, md: 6 }}>Middle Panel - Game Area</Grid>
+        <Grid sx={{ xs: 12, md: 9 }}>
+          {localGameState.status === GameStatus.WAITING && (
+            <GameAreaWaiting props={{ localGameState, isHost }} />
+          )}
 
-        {/* Right Panel */}
-        <Grid sx={{ xs: 12, md: 3 }}>
-          {/* Guesses/Activity
-          <Guesses guesses={guesses} /> */}
-          <Instructions />
+          {localGameState.status === GameStatus.IN_PROGRESS && (
+            <GameAreaInProgress
+              props={{ localGameState, action: localGameState.action }}
+            />
+          )}
         </Grid>
       </Grid>
     </Container>
