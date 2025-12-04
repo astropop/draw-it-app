@@ -13,4 +13,5 @@ public interface GuestPlayerRepository extends JpaRepository<GuestPlayer, Long> 
     Optional<GuestPlayer> findBySessionId(String sessionId);
     Long countByGameAndIsActiveTrue(Game game);
     List<GuestPlayer> findByGameAndIsActiveTrueOrderByJoinedOrderAsc(Game game);
+    Optional<GuestPlayer> findByGameAndIsActiveTrueAndNickname(Game game, String nickname);
 }

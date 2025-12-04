@@ -187,7 +187,7 @@ public class GameService {
     }
 
     /**
-     * join game
+     * join game, or re join
      *
      * @param request name, code
      * @return game response
@@ -202,38 +202,57 @@ public class GameService {
             throw new RuntimeException("Game already started or finished");
         }
 
-        // 3. Check max players 2
-        long currentPlayers = guestPlayerRepository.countByGameAndIsActiveTrue(game);
-        if (currentPlayers >= 2) {
-            throw new RuntimeException("Game is full (max 2 players for VERSUS mode)");
-        }
-
-        // 4. Create new player
-        GuestPlayer player = new GuestPlayer();
-        player.setNickname(request.getNickname());
-        player.setGame(game);
-        player.setIsHost(false);
-        player.setJoinedOrder((int) currentPlayers);
-        player = guestPlayerRepository.save(player);
-
-        // 5. Update Redis state
+        // get redis
         String redisKey = "game::" + request.getGameCode();
 
         GameStateRedisModel redisState = getGameStateFromRedis(redisKey);
 
-        // TODO reconstruct, no saving word into db
-        if (redisState == null) {
-            // Reconstruct from DB if missing
-            redisState = reconstructRedisState(game);
+        Optional<GuestPlayer> checkPlayer = guestPlayerRepository.findByGameAndIsActiveTrueAndNickname(game, request.getNickname());
+
+        GuestPlayer player = null;
+        if(checkPlayer.isEmpty())  {
+            // 3. Check max players 2
+            long currentPlayers = guestPlayerRepository.countByGameAndIsActiveTrue(game);
+            if (currentPlayers >= 2) {
+                throw new RuntimeException("Game is full (max 2 players for VERSUS mode)");
+            }
+
+            // 4. Create new player
+            player = new GuestPlayer();
+            player.setNickname(request.getNickname());
+            player.setGame(game);
+            player.setIsHost(false);
+            player.setJoinedOrder((int) currentPlayers);
+            player = guestPlayerRepository.save(player);
+
+            // 5. Update Redis state
+
+
+            // TODO reconstruct, no saving word into db
+            if (redisState == null) {
+                // Reconstruct from DB if missing
+                redisState = reconstructRedisState(game);
+            }
+
+            // Add player to redis
+            PlayerDto newPlayerDto = convertToPlayerDto(player);
+            redisState.getPlayers().add(newPlayerDto);
+            redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
+
+
+            log.info("Player {} joined game {}", player.getNickname(), request.getGameCode());
+        } else {
+            player = checkPlayer.get();
+
+            // TODO reconstruct, no saving word into db
+            if (redisState == null) {
+                // Reconstruct from DB if missing
+                redisState = reconstructRedisState(game);
+            }
+
+            log.info("Player {} rejoined game {}", request.getNickname(), request.getGameCode());
         }
 
-        // Add player to redis
-        PlayerDto newPlayerDto = convertToPlayerDto(player);
-        redisState.getPlayers().add(newPlayerDto);
-        redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
-
-
-        log.info("Player {} joined game {}", player.getNickname(), request.getGameCode());
 
         // get words
         List<String> availableWords = redisState.getWords().stream()
@@ -250,7 +269,7 @@ public class GameService {
                 .status(game.getStatus())
                 .theme(game.getTheme())
                 .maxRounds(game.getMaxRounds())
-                .currentRound(game.getCurrentRound())
+                .currentRound(redisState.getCurrentRound())
                 .currentTurnNumber(redisState.getCurrentTurnNum()) // join current round and current turn = 0, increase next turn
                 .drawingTime(game.getDrawingTime())
                 .guessingTime(game.getGuessingTime())
