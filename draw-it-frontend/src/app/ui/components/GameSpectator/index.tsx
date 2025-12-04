@@ -2,7 +2,6 @@
 "use client";
 
 import { SpectateGameResponseDto } from "@/app/lib/api/SpectateGame/type";
-import { GameStatus } from "@/app/lib/game.type";
 import { Brush, Cancel, CheckCircle, Timer } from "@mui/icons-material";
 import {
   Alert,
@@ -16,7 +15,6 @@ import {
   Grid,
   Paper,
   Stack,
-  Tab,
   Table,
   TableBody,
   TableCell,
@@ -27,6 +25,7 @@ import {
 } from "@mui/material";
 import Image from "next/image";
 import { useState } from "react";
+import { formatDate, getStatusColor, getStatusLabel } from "../../utils";
 
 export default function GameSpectator({
   initialData,
@@ -39,37 +38,6 @@ export default function GameSpectator({
   const sortedPlayers = [...gameData.playersInGame].sort(
     (a, b) => b.score - a.score
   );
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case GameStatus.WAITING:
-        return "info";
-      case GameStatus.IN_PROGRESS:
-        return "warning";
-      case GameStatus.FINISHED:
-        return "success";
-      default:
-        return "default";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case GameStatus.WAITING:
-        return "Waiting";
-      case GameStatus.IN_PROGRESS:
-        return "In Progress";
-      case GameStatus.FINISHED:
-        return "Finished";
-      default:
-        return status;
-    }
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleString("vi-VN");
-  };
 
   return (
     <>

@@ -3,15 +3,15 @@
 
 import { Client, IMessage } from "@stomp/stompjs";
 import { useCallback, useEffect, useRef, useState } from "react";
-import SockJS from "sockjs-client";
+
 import {
+  DrawingSubmittedMessage,
   GameStateMessage,
   GuessSubmittedMessage,
-  PlayerDTO,
-  DrawingSubmittedMessage,
   KickPlayerResponse,
-  PlayerUpdateMessage,
+  PlayerDto,
   PlayerListUpdate,
+  PlayerUpdateMessage,
 } from "../lib/game.type";
 
 // export interface WebSocketMessage {
@@ -21,7 +21,7 @@ import {
 
 export function useWebSocket(gameCode: string | null) {
   const [connected, setConnected] = useState(false);
-  const [players, setPlayers] = useState<PlayerDTO[]>([]);
+  const [players, setPlayers] = useState<PlayerDto[]>([]);
   const [gameState, setGameState] = useState<GameStateMessage | null>(null);
   const [currentDrawing, setCurrentDrawing] = useState<string | null>(null);
   const [guesses, setGuesses] = useState<GuessSubmittedMessage[]>([]);
@@ -30,7 +30,7 @@ export function useWebSocket(gameCode: string | null) {
   useEffect(() => {
     if (!gameCode) return;
 
-    const socket = new SockJS(process.env.NEXT_PUBLIC_WS_URL!);
+    const socketURL = process.env.NEXT_PUBLIC_WS_URL;
 
     const handlePlayerUpdate = (
       data: PlayerUpdateMessage | PlayerListUpdate
@@ -40,15 +40,15 @@ export function useWebSocket(gameCode: string | null) {
         setPlayers(data.players);
       } else if (data.type === "PLAYER_JOINED") {
         // PlayerUpdateMessage
-        setPlayers((prev) => [
-          ...prev,
-          {
-            nickname: data.nickname,
-            sessionId: data.sessionId,
-            score: data.score || 0,
-            isHost: false,
-          },
-        ]);
+        // setPlayers((prev) => [
+        //   ...prev,
+        //   {
+        //     nickname: data.nickname,
+        //     sessionId: data.sessionId,
+        //     score: data.score || 0,
+        //     isHost: false,
+        //   },
+        // ]);
       }
     };
 
@@ -89,7 +89,7 @@ export function useWebSocket(gameCode: string | null) {
     };
 
     const stompClient = new Client({
-      webSocketFactory: () => socket as WebSocket,
+      brokerURL: socketURL,
       onConnect: () => {
         console.log("WebSocket connected");
         setConnected(true);

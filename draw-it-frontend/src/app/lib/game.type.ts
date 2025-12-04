@@ -38,95 +38,31 @@ export interface GameResponseDto {
   action: string;
 }
 
-export interface GuestPlayer {
-  id: number;
-  nickname: string;
-  sessionId: string;
-  score: number;
-  isHost: boolean;
-  isActive: boolean;
-  joinedAt: string;
-}
-
-// Game Types
-export interface Game {
-  id: number;
-  gameCode: string;
-  gameMode: GameMode;
-  status: GameStatus;
-  theme: string;
-  language: string;
-  maxRounds: number;
-  currentRound: number;
-  drawingTime: number;
-  guessingTime: number;
-
-  hostId: number;
-  createdAt: string;
-  startedAt?: string;
-  finishedAt?: string;
-}
-
-export interface GameListItemDTO {
-  gameCode: string;
-  theme: string;
-  status: GameStatus;
-  playerCount: number;
-  createdAt: string;
-  startedAt?: string;
-  finishedAt?: string;
-}
-
-// Round Types
-export interface GuessDTO {
-  playerNickname: string;
-  guess: string;
-  isCorrect: boolean;
-  pointsEarned: number;
-  submittedAt: string;
-}
-
-export interface RoundSpectatorDTO {
-  roundNumber: number;
-  drawer: string;
-  selectedWord?: string;
-  drawingData?: string;
-  containsText: boolean;
-  guesses: GuessDTO[];
-}
-
-export interface GameSpectatorDTO {
-  gameCode: string;
-  theme: string;
-  status: GameStatus;
-  currentRound: number;
-  maxRounds: number;
-  players: PlayerDTO[];
-  currentRoundInfo?: RoundSpectatorDTO;
-  allRounds?: RoundSpectatorDTO[];
-}
-
+// websocket
 export interface SubmitDrawingRequest {
   roundId: number;
   drawingData: string;
   selectedWord: string;
 }
 
+// websocket
 export interface SubmitDrawingResponse {
   containsText: boolean;
   containsKeyword: boolean;
   warning?: string;
 }
 
+// websocket
 export interface SubmitGuessRequest {
   roundId: number;
   guess: string;
 }
 
+// websocket
 export interface KickPlayerRequest {
   targetSessionId: string;
 }
-
+// websocket
 export interface KickPlayerResponse {
   kicked: boolean;
   reason: string;
@@ -141,10 +77,11 @@ export interface PlayerUpdateMessage {
   score?: number;
 }
 
+// websocket
 export interface PlayerListUpdate {
-  players: PlayerDTO[];
+  players: PlayerDto[];
 }
-
+// websocket
 export interface DrawingSubmittedMessage {
   roundId: number;
   drawer: string;
@@ -152,7 +89,7 @@ export interface DrawingSubmittedMessage {
   containsText: boolean;
   containsKeyword: boolean;
 }
-
+// websocket
 export interface GuessSubmittedMessage {
   roundId: number;
   playerNickname: string;
@@ -161,6 +98,7 @@ export interface GuessSubmittedMessage {
   pointsEarned: number;
 }
 
+// websocket
 export interface GameStateMessage {
   type: "GAME_STARTED" | "NEXT_ROUND" | "GAME_FINISHED";
   gameCode: string;
@@ -168,14 +106,4 @@ export interface GameStateMessage {
   maxRounds?: number;
   currentDrawer?: string;
   status?: GameStatus;
-}
-
-// export interface WebSocketMessage {
-//   type: string;
-//   // data: any; // Can be more specific based on message type
-// }
-
-export interface JoinGameRequest {
-  gameCode: string;
-  nickname: string;
 }

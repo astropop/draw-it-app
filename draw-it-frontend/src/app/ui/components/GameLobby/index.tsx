@@ -3,10 +3,10 @@
 
 import { getGameList } from "@/app/lib/api/GetGameList/fetcher";
 import { GameListItemResponseDto } from "@/app/lib/api/GetGameList/type";
-import { GameStatus } from "@/app/lib/game.type";
 import { Box, Button, Container, Grid, Typography } from "@mui/material";
 import Link from "next/link";
 import { useState } from "react";
+import { getStatusColor, getStatusLabel } from "../../utils";
 import GameCard from "./GameCard";
 
 // const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -21,32 +21,6 @@ export default function GameLobby({
   const handleRefresh = async () => {
     const updatedGames = await getGameList();
     setGames(updatedGames);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case GameStatus.WAITING:
-        return "info";
-      case GameStatus.IN_PROGRESS:
-        return "warning";
-      case GameStatus.FINISHED:
-        return "success";
-      default:
-        return "default";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case GameStatus.WAITING:
-        return "Waiting";
-      case GameStatus.IN_PROGRESS:
-        return "In Progress";
-      case GameStatus.FINISHED:
-        return "Finished";
-      default:
-        return status;
-    }
   };
 
   return (
