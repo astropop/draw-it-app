@@ -29,7 +29,6 @@ import com.drawit.drawit.util.GameCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -161,7 +160,7 @@ public class GameService {
 
         String redisKey = "game::" + gameCode;
         // store in redis 2h
-        redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(redisKey, redisState, 240, TimeUnit.HOURS);
 
         log.info("Game id: {} , code: {}", game.getId(), gameCode);
 
@@ -210,7 +209,7 @@ public class GameService {
         Optional<GuestPlayer> checkPlayer = guestPlayerRepository.findByGameAndIsActiveTrueAndNickname(game, request.getNickname());
 
         GuestPlayer player = null;
-        if(checkPlayer.isEmpty())  {
+        if (checkPlayer.isEmpty()) {
             // 3. Check max players 2
             long currentPlayers = guestPlayerRepository.countByGameAndIsActiveTrue(game);
             if (currentPlayers >= 2) {
@@ -237,7 +236,7 @@ public class GameService {
             // Add player to redis
             PlayerDto newPlayerDto = convertToPlayerDto(player);
             redisState.getPlayers().add(newPlayerDto);
-            redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(redisKey, redisState, 240, TimeUnit.HOURS);
 
 
             log.info("Player {} joined game {}", player.getNickname(), request.getGameCode());
@@ -353,13 +352,14 @@ public class GameService {
             throw new RuntimeException("You are not in this game");
         }
 
-        // Return available words redis
-        List<String> availableWords = redisState.getWords().stream()
-                .map(WordStatusDto::getWord)
-                .collect(Collectors.toList());
-
-        // check action
+        // get action
         String action = getActionPlayer(redisState, playerSessionId);
+
+        // get latest drawing data
+        String latestDrawingData = getDrawingDataByAction(redisState, action);
+
+        // Return available words redis
+        List<String>  availableWords = getAvailWordsByAction(redisState, action);
 
         return GameResponseDto.builder()
                 .gameId(redisState.getGameId())
@@ -379,6 +379,7 @@ public class GameService {
 
                 .currentDrawerSessionId(redisState.getCurrentDrawerSessionId()) // TODO consider to update later
                 .action(action)
+                .guessingImageData(latestDrawingData)
                 .build();
     }
 
@@ -464,7 +465,7 @@ public class GameService {
         redisState.getRounds().add(firstRound);
 
         // Save to Redis
-        redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(redisKey, redisState, 240, TimeUnit.HOURS);
 
         log.info("Game {} started. First drawer: {} , player sessionid: {}", gameCode, firstRound.getDrawerNickname(), firstDrawer.getPlayerSessionId());
 
@@ -591,7 +592,7 @@ public class GameService {
         currentRound.setSubmitAt(LocalDateTime.now());
 
         // Save to Redis
-        redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(redisKey, redisState, 240, TimeUnit.HOURS);
 
         // TODO update websocket Broadcast drawing to all players
 //        DrawingSubmitMessageDto drawingMessage = DrawingSubmitMessageDto.builder()
@@ -698,7 +699,7 @@ public class GameService {
 
         // guess correct move to next step
         // or time out
-        if (isCorrect || (redisState.getGuessingTime() - request.getGuessingTime() <= 0 )) {
+        if (isCorrect || (redisState.getGuessingTime() - request.getGuessingTime() <= 0)) {
             // save history to db
             saveRoundHistoryToDB(redisState, currentRound, gameCode);
             // handle turn
@@ -706,7 +707,7 @@ public class GameService {
         }
 
         // Save to Redis
-        redisTemplate.opsForValue().set(redisKey, redisState, 24, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(redisKey, redisState, 240, TimeUnit.HOURS);
 
 //        // TODO websocket Broadcast guess to all players
 //        GuessSubmittedMessageDto guessMessage = GuessSubmittedMessageDto.builder()
@@ -728,7 +729,44 @@ public class GameService {
     }
 
     /**
+     * get Available words by action from redis
+     *
+     * @param redisState redis state
+     * @return action guess : return data
+     */
+    private List<String> getAvailWordsByAction(GameStateRedisModel redisState, String action) {
+        if (!action.equals("draw")) {
+            return new ArrayList<>();
+        }
+        return redisState.getWords().stream()
+                .map(WordStatusDto::getWord)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * get latest drawing data by action from redis
+     *
+     * @param redisState redis state
+     * @return action guess : return data
+     */
+    private String getDrawingDataByAction(GameStateRedisModel redisState, String action) {
+        if (!action.equals("guess")) {
+            return null;
+        }
+        List<SpectateGameRoundDto> spectateGameRoundDtoLst = redisState.getRounds();
+        // round not create
+        if (spectateGameRoundDtoLst.isEmpty()) {
+            return null;
+        }
+
+        SpectateGameRoundDto currentRound = spectateGameRoundDtoLst.get(redisState.getRounds().size() - 1);
+
+        return currentRound.getDrawingData();
+    }
+
+    /**
      * return action of player to draw or to guess
+     *
      * @param redisState redis model
      * @return draw, wait, guess
      */
