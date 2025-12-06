@@ -11,17 +11,10 @@ const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 type GamePageProps = { params: Promise<{ code: string }> };
 
 const getGameData = cache(async (code: string) => {
-  const cookiesStore = await cookies();
-  const playerSessionId = cookiesStore.get("playerSessionId")?.value;
-
-  if (!playerSessionId) {
-    redirect(`/join/${code}`);
-  }
-
-  const response = await getGame(code, { playerSessionId });
+  const response = await getGame(code);
 
   if (!response) {
-    notFound();
+    redirect(`/`);
   }
 
   return response;

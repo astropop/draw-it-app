@@ -55,3 +55,14 @@ export const joinGamePrefilledSchema = z.object({
 });
 
 export type JoinGamePrefilledInput = z.infer<typeof joinGamePrefilledSchema>;
+
+/**
+ * SUBMIT GUESS VALIDATIONS
+ */
+
+// Validation schema joining game
+export const submitGuessSchema = z.object({
+  guess: z.string().optional(),
+});
+
+export type SubmitGuessInput = z.infer<typeof submitGuessSchema>;

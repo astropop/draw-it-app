@@ -23,7 +23,7 @@ export interface PlayerDto {
 export interface GameResponseDto {
   gameId: number;
   gameCode: string;
-  words: string[];
+
   playerSessionId: string;
   status: GameStatus;
   theme: string;
@@ -34,8 +34,10 @@ export interface GameResponseDto {
   guessingTime: number;
   isHost: boolean;
   players: PlayerDto[];
-  currentDrawerSessionId: string;
   action: string;
+  currentDrawerSessionId: string;
+  words: string[];
+  guessingImageData: string;
 }
 
 // websocket

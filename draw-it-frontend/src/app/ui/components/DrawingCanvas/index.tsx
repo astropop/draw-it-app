@@ -13,9 +13,9 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 interface DrawingCanvasProps {
-  // selectedWord: string;
-  // onSubmit: (imageData: string) => void;
-  // timeLimit: number;
+  // selectedWord?: string;
+  handleSubmitDrawing?: (imageData: string) => Promise<void>;
+  timeLimit?: number;
 }
 
 interface Coordinates {
@@ -25,37 +25,42 @@ interface Coordinates {
 
 type ToolType = "pen" | "eraser";
 
-export default function DrawingCanvas() {
+export default function DrawingCanvas({
+  handleSubmitDrawing,
+  timeLimit,
+}: DrawingCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
   const [lastPos, setLastPos] = useState<Coordinates>({ x: 0, y: 0 });
 
+  const [tool, setTool] = useState<ToolType>("pen");
+
   // brush
   const [brushColor, setBrushColor] = useState<string>("#1976d2");
 
-  // brush and eraser
+  // brush and eraser size
   const [penSize, setPenSize] = useState<number>(4);
   const [eraserSize, setEraserSize] = useState<number>(20);
 
-  const [tool, setTool] = useState<ToolType>("pen");
+  // auto submit when the time is over
+  const [timeLeft, setTimeLeft] = useState(timeLimit);
 
-  // const [timeLeft, setTimeLeft] = useState(timeLimit);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (!prev) return;
+        if (prev <= 1) {
+          handleSubmit();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-  // useEffect(() => {
-  //   const timer = setInterval(() => {
-  //     setTimeLeft((prev) => {
-  //       if (prev <= 1) {
-  //         handleSubmit();
-  //         return 0;
-  //       }
-  //       return prev - 1;
-  //     });
-  //   }, 1000);
-
-  //   return () => clearInterval(timer);
-  // });
+    return () => clearInterval(timer);
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -163,14 +168,14 @@ export default function DrawingCanvas() {
     if (!canvas) return;
 
     const imageData = canvas.toDataURL("image/png");
-    // onSubmit(imageData);
     console.log("drawing data", imageData);
+    handleSubmitDrawing && handleSubmitDrawing(imageData);
   };
 
   return (
     <Box sx={{ textAlign: "center" }}>
       <Alert severity='info' sx={{ mb: 2 }}>
-        {/* Draw: {selectedWord} | Time: {timeLeft}s */}
+        Time: {timeLeft || "N/A"}s
       </Alert>
       <Box sx={{ display: "flex", gap: 2 }}>
         <Box
@@ -320,9 +325,11 @@ export default function DrawingCanvas() {
         <Button variant='outlined' onClick={clearCanvas}>
           Clear
         </Button>
-        <Button variant='contained' onClick={handleSubmit}>
-          Submit Drawing
-        </Button>
+        {handleSubmitDrawing && (
+          <Button variant='contained' onClick={handleSubmit}>
+            Submit Drawing
+          </Button>
+        )}
       </Box>
     </Box>
   );

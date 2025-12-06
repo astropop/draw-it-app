@@ -1,3 +1,4 @@
+"use client";
 import { GameResponseDto } from "@/app/lib/game.type";
 import {
   Alert,
@@ -8,10 +9,22 @@ import {
   Typography,
 } from "@mui/material";
 import DrawingCanvas from "../../../DrawingCanvas";
+import { useEffect, useState } from "react";
+import { SubmitDrawingRequestDto } from "@/app/lib/api/SubmitDrawing/type";
+import { submitDrawing } from "@/app/lib/api/SubmitDrawing/fetcher";
+import Image from "next/image";
+import { SubmitGuessRequestDto } from "@/app/lib/api/SubmitGuess/type";
+import { submitGuess } from "@/app/lib/api/SubmitGuess/fetcher";
+import { SubmitGuessInput, submitGuessSchema } from "@/app/lib/validation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { getGame } from "@/app/lib/api/GetGame/fetcher";
+import { useRouter } from "next/navigation";
 
 export type GameAreaInProgressProps = {
   localGameState: GameResponseDto;
   action: string; // draw, guess, wait
+  setLocalGameState: (data: GameResponseDto) => void;
   // selectedWord: string;
   // currentDrawing: string | null;
   // roundComplete: boolean;
@@ -19,17 +32,100 @@ export type GameAreaInProgressProps = {
   // warningMessage: string;
 
   // guess: string;
-  // handleWordSelect: (word: string) => void;
-  // handleSubmitDrawing: (imageData: string) => Promise<void>;
+  // handleWordSelect?: (word: string) => void;
+  // handleSubmitDrawing?: (imageData: string) => Promise<void>;
   // setGuess: (value: string) => void;
   // handleSubmitGuess: () => Promise<void>;
 };
 
 const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
+  /*
+   * constants
+   */
+  const route = useRouter();
+  /*
+   * State management
+   */
+  const [wordSelected, setWordSelected] = useState<string>("");
+  const [guessWrong, setGuessWrong] = useState<string>(); // wrong, corrected
+
+  /*
+   * functions
+   */
+  const handleSubmitDrawing = async (imageData: string) => {
+    const gameCode = props.localGameState.gameCode;
+    const submitData = {
+      roundNumber: props.localGameState.currentRound,
+      turnNumber: props.localGameState.currentTurnNumber,
+      drawingData: imageData,
+      selectedWord: wordSelected,
+      drawingTime: 0, // TODO
+    } as SubmitDrawingRequestDto;
+
+    const response = await submitDrawing(gameCode, submitData);
+
+    if (!response) {
+      console.log("Error Submit Drawing");
+      return;
+    }
+    route.refresh(); // refresh current page
+    console.log("ok drawing", response.success);
+  };
+
+  const handleWordSelect = (word: string) => {
+    if (confirm("Are you confirm to pick word : " + word)) {
+      setWordSelected(word);
+    }
+  };
+
+  const handleSubmitGuess = async (data: SubmitGuessInput) => {
+    const gameCode = props.localGameState.gameCode;
+    const submitData = {
+      roundNumber: props.localGameState.currentRound,
+      turnNumber: props.localGameState.currentTurnNumber,
+      guess: data.guess,
+      guessingTime: 10, // TODO
+    } as SubmitGuessRequestDto;
+    console.log("handleSubmitGuess", submitData);
+    const response = await submitGuess(gameCode, submitData);
+
+    if (!response) {
+      console.log("Error Submit Guess");
+      return;
+    }
+
+    if (!response.isCorrect) {
+      setGuessWrong("wrong");
+      return;
+    }
+    route.refresh();
+  };
+
+  /*
+   * Hooks area
+   */
+  // verification for form
+  const {
+    register,
+    handleSubmit,
+    // watch,
+    setValue,
+    setError,
+    formState: { errors, isSubmitting, isLoading },
+  } = useForm<SubmitGuessInput>({
+    // validate by zod
+    resolver: zodResolver(submitGuessSchema),
+    defaultValues: {
+      guess: "",
+    },
+  });
+
+  //
+
   return (
     <>
       {/* WORD SELECTION - draw */}
-      {props.action === "draw" && (
+      {props.action === "draw" && !wordSelected && (
         <Box sx={{ textAlign: "center", py: 4 }}>
           <Typography variant='h5' gutterBottom>
             Choose a word to draw:
@@ -47,7 +143,7 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
                 key={word}
                 variant='outlined'
                 size='large'
-                // onClick={() => props.handleWordSelect(word)}
+                onClick={() => handleWordSelect(word)}
                 sx={{ minWidth: 120, mb: 1 }}
               >
                 {word}
@@ -58,13 +154,13 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
       )}
 
       {/* DRAWING CANVAS - draw */}
-      {props.action === "draw" && (
+      {props.action === "draw" && wordSelected && (
         <Box>
           <Alert severity='info' sx={{ mb: 2 }}>
-            Draw: <strong>Nothing here</strong>
+            Draw: <strong>{wordSelected}</strong>
           </Alert>
 
-          <DrawingCanvas />
+          <DrawingCanvas handleSubmitDrawing={handleSubmitDrawing} />
         </Box>
       )}
 
@@ -84,19 +180,24 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
               mb: 2,
             }}
           >
-            Image here
-            {/* <Image
-              src={props.currentDrawing}
-              alt='Current Drawing'
-              style={{
-                width: "100%",
-                height: "auto",
-                display: "block",
-              }}
-            /> */}
+            {props.localGameState.guessingImageData && (
+              <Image
+                src={props.localGameState.guessingImageData}
+                alt={`Round ${props.localGameState.currentRound}`}
+                style={{
+                  display: "block",
+                }}
+                width={500}
+                height={400}
+              />
+            )}
           </Box>
 
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <Box
+            component='form'
+            onSubmit={handleSubmit(handleSubmitGuess)}
+            sx={{ display: "flex", gap: 2, flexDirection: "column" }}
+          >
             <TextField
               // value={props.guess}
               // onChange={(e) => props.setGuess(e.target.value)}
@@ -107,12 +208,27 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
               //     props.handleSubmitGuess();
               //   }
               // }}
+              {...register("guess")}
+              error={!!errors.guess}
+              disabled={isSubmitting || isLoading}
             />
+            {errors.guess && (
+              <Typography component='span' color='error' display={"block"}>
+                {errors.guess.message}
+              </Typography>
+            )}
+            {guessWrong && guessWrong === "wrong" && (
+              <Typography component='span' color='warning' display={"block"}>
+                Your guess is wrong. Please guess another word!
+              </Typography>
+            )}
             <Button
               variant='contained'
               // onClick={props.handleSubmitGuess}
               // disabled={!props.guess.trim() }
               sx={{ minWidth: 100 }}
+              disabled={isSubmitting || isLoading}
+              type='submit'
             >
               Submit
             </Button>

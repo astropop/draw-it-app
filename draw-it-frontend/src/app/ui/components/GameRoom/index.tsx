@@ -1,4 +1,3 @@
-// app/components/GameRoom.tsx - FULL VERSION
 "use client";
 
 import { GameResponseDto, GameStatus } from "@/app/lib/game.type";
@@ -20,14 +19,34 @@ type GameRoomProps = {
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 export default function GameRoom({ gameData }: GameRoomProps) {
-  // State management
+  /*
+   * constants area
+   */
+  const isHost = gameData.isHost;
+  /*
+   * State management
+   */
   const [currentPlayerSessionId, setCurrentPlayerSessionId] =
     useState<string>("");
   const [currentNickname, setCurrentNickname] = useState<string>("");
   const [localGameState, setLocalGameState] =
     useState<GameResponseDto>(gameData); // updateable game state
 
-  // useefect
+  /*
+   * functions
+   */
+  const handleKick = async (targetPlayerSessionId: string) => {
+    // Call API kick player
+  };
+
+  const handleStartGame = async (currentPlayerSessionId: string) => {
+    if (localGameState.players.length < 2) alert("Please wait another player");
+    // Call API start game
+  };
+
+  /*
+   * Hooks area
+   */
   // Initialize session from localStorage
   useEffect(() => {
     const sessionId =
@@ -37,19 +56,7 @@ export default function GameRoom({ gameData }: GameRoomProps) {
     setCurrentPlayerSessionId(sessionId);
     setCurrentNickname(nickname);
   }, []);
-
-  // constants area
-  const isHost = gameData.isHost;
-
-  // functions
-  const handleKick = async (targetPlayerSessionId: string) => {
-    // Call API kick player
-  };
-
-  const handleStartGame = async (currentPlayerSessionId: string) => {
-    if (localGameState.players.length < 2) alert("Please wait another player");
-    // Call API start game
-  };
+  //
 
   return (
     <Container maxWidth='xl' sx={{ py: 3 }}>
@@ -104,7 +111,11 @@ export default function GameRoom({ gameData }: GameRoomProps) {
 
           {localGameState.status === GameStatus.IN_PROGRESS && (
             <GameAreaInProgress
-              props={{ localGameState, action: localGameState.action }}
+              props={{
+                localGameState,
+                action: localGameState.action,
+                setLocalGameState,
+              }}
             />
           )}
         </Grid>
