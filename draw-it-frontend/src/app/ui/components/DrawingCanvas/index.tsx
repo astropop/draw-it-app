@@ -13,9 +13,8 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 interface DrawingCanvasProps {
-  // selectedWord?: string;
   handleSubmitDrawing?: (imageData: string) => Promise<void>;
-  timeLimit?: number;
+  onDrawingUpdate?: (imageData: string) => void;
 }
 
 interface Coordinates {
@@ -27,8 +26,14 @@ type ToolType = "pen" | "eraser";
 
 export default function DrawingCanvas({
   handleSubmitDrawing,
-  timeLimit,
+  onDrawingUpdate,
 }: DrawingCanvasProps) {
+  /*
+   * constants
+   */
+  /*
+   * State management
+   */
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
@@ -44,45 +49,9 @@ export default function DrawingCanvas({
   const [penSize, setPenSize] = useState<number>(4);
   const [eraserSize, setEraserSize] = useState<number>(20);
 
-  // auto submit when the time is over
-  const [timeLeft, setTimeLeft] = useState(timeLimit);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (!prev) return;
-        if (prev <= 1) {
-          handleSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  });
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.scale(dpr, dpr);
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      setContext(ctx);
-
-      // background white
-    }
-  }, []);
-
+  /*
+   * functions
+   */
   const getCoordinates = (
     e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
   ): Coordinates => {
@@ -146,6 +115,12 @@ export default function DrawingCanvas({
     context.stroke();
 
     setLastPos({ x, y });
+
+    // Update parent with current drawing data on every stroke
+    if (onDrawingUpdate) {
+      const imageData = canvas.toDataURL("image/png");
+      onDrawingUpdate(imageData);
+    }
   };
 
   const stopDrawing = () => {
@@ -169,14 +144,41 @@ export default function DrawingCanvas({
 
     const imageData = canvas.toDataURL("image/png");
     console.log("drawing data", imageData);
-    handleSubmitDrawing && handleSubmitDrawing(imageData);
+
+    // Call submit if handler exists
+    if (handleSubmitDrawing) {
+      handleSubmitDrawing(imageData);
+    }
   };
+
+  /*
+   * Hooks area
+   */
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.scale(dpr, dpr);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      setContext(ctx);
+    }
+    if (onDrawingUpdate) {
+      const imageData = canvas.toDataURL("image/png");
+      onDrawingUpdate(imageData);
+    }
+  }, []);
 
   return (
     <Box sx={{ textAlign: "center" }}>
-      <Alert severity='info' sx={{ mb: 2 }}>
-        Time: {timeLeft || "N/A"}s
-      </Alert>
       <Box sx={{ display: "flex", gap: 2 }}>
         <Box
           sx={{

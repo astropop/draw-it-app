@@ -244,7 +244,7 @@ export default function GameSpectator({
                           round.drawingData.length > 50 ? (
                             <>
                               <Image
-                                src={`data:image/png;base64,${round.drawingData}`}
+                                src={round.drawingData}
                                 width={400}
                                 height={300}
                                 alt={`Round ${round.roundNumber} Turn ${round.turnNumber} Drawing`}

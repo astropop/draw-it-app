@@ -9,6 +9,8 @@ import Players from "./LeftPanel/Players";
 import StartButton from "./LeftPanel/StartButton";
 import Instructions from "./RightPanel/Instructions";
 import RoomHeader from "./RoomHeader";
+import { getGame } from "@/app/lib/api/GetGame/fetcher";
+import { startGame } from "@/app/lib/api/StartGame/fetcher";
 
 type GameRoomProps = {
   gameData: GameResponseDto;
@@ -39,9 +41,32 @@ export default function GameRoom({ gameData }: GameRoomProps) {
     // Call API kick player
   };
 
-  const handleStartGame = async (currentPlayerSessionId: string) => {
-    if (localGameState.players.length < 2) alert("Please wait another player");
+  const handleStartGame = async () => {
+    if (localGameState.players.length < 2) {
+      alert("Please wait another player");
+      return;
+    }
     // Call API start game
+    try {
+      const updated = await startGame(gameData.gameCode);
+      if (updated) {
+        setLocalGameState(updated);
+      }
+    } catch (err) {
+      console.error("Failed to start game:", err);
+    }
+  };
+
+  // Refresh game state from API
+  const refreshGameState = async () => {
+    try {
+      const updated = await getGame(gameData.gameCode);
+      if (updated) {
+        setLocalGameState(updated);
+      }
+    } catch (err) {
+      console.error("Failed to refresh game state:", err);
+    }
   };
 
   /*
@@ -56,6 +81,17 @@ export default function GameRoom({ gameData }: GameRoomProps) {
     setCurrentPlayerSessionId(sessionId);
     setCurrentNickname(nickname);
   }, []);
+
+  // Auto-refresh game state when in progress (every 3 seconds)
+  // useEffect(() => {
+  //   if (localGameState.status !== GameStatus.IN_PROGRESS) return;
+
+  //   const interval = setInterval(() => {
+  //     refreshGameState();
+  //   }, 3000);
+
+  //   return () => clearInterval(interval);
+  // }, [localGameState.status, gameData.gameCode, currentPlayerSessionId]);
   //
 
   return (
@@ -69,7 +105,7 @@ export default function GameRoom({ gameData }: GameRoomProps) {
       {/* Main Content */}
       <Grid container spacing={3}>
         {/* Left Panel - Players */}
-        <Grid sx={{ xs: 12, md: 3 }}>
+        <Grid sx={{ xs: 12, md: 2 }}>
           <Card>
             <CardContent>
               {/* Players  */}
@@ -95,16 +131,12 @@ export default function GameRoom({ gameData }: GameRoomProps) {
             </CardContent>
           </Card>
           <Instructions />
-          {/* Timer */}
-          {/* {timerType && timeLeft > 0 && (
-            <Timer props={{ timerType, timeLeft, localGameState }} />
-          )} */}
           <br></br>
           Timer
         </Grid>
 
         {/* Middle Panel - Game Area */}
-        <Grid sx={{ xs: 12, md: 9 }}>
+        <Grid sx={{ xs: 12, md: 10 }}>
           {localGameState.status === GameStatus.WAITING && (
             <GameAreaWaiting props={{ localGameState, isHost }} />
           )}
@@ -115,6 +147,9 @@ export default function GameRoom({ gameData }: GameRoomProps) {
                 localGameState,
                 action: localGameState.action,
                 setLocalGameState,
+                currentPlayerSessionId,
+                onSubmitDrawing: refreshGameState,
+                onSubmitGuess: refreshGameState,
               }}
             />
           )}
