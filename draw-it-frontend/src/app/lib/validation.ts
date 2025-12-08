@@ -66,3 +66,17 @@ export const submitGuessSchema = z.object({
 });
 
 export type SubmitGuessInput = z.infer<typeof submitGuessSchema>;
+
+/**
+ * PAGINATION & FILTERING VALIDATIONS
+ */
+
+export const sortTypeSchema = z.enum(["asc", "desc"]);
+export type SortType = z.infer<typeof sortTypeSchema>;
+
+export const gameListQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  sort: sortTypeSchema.default("desc"),
+});
+
+export type GameListQueryInput = z.infer<typeof gameListQuerySchema>;
