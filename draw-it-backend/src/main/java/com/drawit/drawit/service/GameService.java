@@ -7,6 +7,7 @@ import com.drawit.drawit.dto.WordStatusDto;
 import com.drawit.drawit.dto.creategame.CreateGameRequestDto;
 import com.drawit.drawit.dto.getgame.GetGameRequestDto;
 import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
+import com.drawit.drawit.dto.getgamelist.GameListResponseDto;
 import com.drawit.drawit.dto.joingame.JoinGameRequestDto;
 import com.drawit.drawit.dto.spectategame.GuessDto;
 import com.drawit.drawit.dto.spectategame.SpectateGameResponseDto;
@@ -29,6 +30,10 @@ import com.drawit.drawit.util.GameCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,10 +71,14 @@ public class GameService {
      *
      * @return list game
      */
-    public List<GameListItemResponseDto> getGameList() {
-        List<Game> games = gameRepository.findAll();
+    public GameListResponseDto getGameList(int page, int pageSize, String sort) {
+        Sort sortBy = sort.equals("desc") ? Sort.by("createdAt").descending() : Sort.by("createdAt").ascending();
+        Pageable pageable = PageRequest.of(page - 1, pageSize, sortBy);
+        Page<Game> pageList = gameRepository.findAll(pageable);
 
-        return games.stream().map(game -> {
+        Long totalGame = gameRepository.count();
+
+        List<GameListItemResponseDto> gameList = pageList.stream().map(game -> {
             int playerCount = guestPlayerRepository.countByGameAndIsActiveTrue(game).intValue();
 
             return GameListItemResponseDto.builder()
@@ -81,7 +90,9 @@ public class GameService {
                     .startedAt(game.getStartedAt())
                     .finishedAt(game.getFinishedAt())
                     .build();
-        }).collect(Collectors.toList());
+        }).toList();
+
+        return GameListResponseDto.builder().totalGame(totalGame).gameItemList(gameList).build();
     }
 
     /**
@@ -359,7 +370,7 @@ public class GameService {
         String latestDrawingData = getDrawingDataByAction(redisState, action);
 
         // Return available words redis
-        List<String>  availableWords = getAvailWordsByAction(redisState, action);
+        List<String> availableWords = getAvailWordsByAction(redisState, action);
 
         return GameResponseDto.builder()
                 .gameId(redisState.getGameId())
