@@ -35,6 +35,7 @@ export default function DrawingCanvas({
    * State management
    */
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasImageRef = useRef<string>("");
   const [isDrawing, setIsDrawing] = useState(false);
 
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
@@ -108,10 +109,14 @@ export default function DrawingCanvas({
     context.lineWidth = currentSize;
     context.strokeStyle = tool === "eraser" ? "#ffffff" : brushColor;
 
-    // 1. Luôn vẽ nét chính (Bút hoặc Tẩy đều vẽ nét này)
+    // Vẽ đường cong Bézier để có nét mượt mà
+    // Điểm điều khiển là điểm giữa giữa vị trí cũ và vị trí mới
+    const controlX = (lastPos.x + x) / 2;
+    const controlY = (lastPos.y + y) / 2;
+
     context.beginPath();
     context.moveTo(lastPos.x, lastPos.y);
-    context.lineTo(x, y);
+    context.quadraticCurveTo(controlX, controlY, x, y);
     context.stroke();
 
     setLastPos({ x, y });
@@ -154,7 +159,7 @@ export default function DrawingCanvas({
   /*
    * Hooks area
    */
-  useEffect(() => {
+  const initializeCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -170,12 +175,37 @@ export default function DrawingCanvas({
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       setContext(ctx);
+
+      // Restore previous drawing if exists
+      if (canvasImageRef.current) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+        };
+        img.src = canvasImageRef.current;
+      }
     }
-    if (onDrawingUpdate) {
-      const imageData = canvas.toDataURL("image/png");
+  };
+
+  useEffect(() => {
+    initializeCanvas();
+
+    // Lắng nghe sự kiện resize
+    const handleResize = () => {
+      initializeCanvas();
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (onDrawingUpdate && canvasRef.current) {
+      const imageData = canvasRef.current.toDataURL("image/png");
+      canvasImageRef.current = imageData;
       onDrawingUpdate(imageData);
     }
-  }, []);
+  }, [onDrawingUpdate]);
 
   return (
     <Box sx={{ textAlign: "center" }}>

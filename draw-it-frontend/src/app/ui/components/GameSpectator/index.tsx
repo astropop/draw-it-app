@@ -239,14 +239,19 @@ export default function GameSpectator({
 
                     <Grid container spacing={3}>
                       <Grid size={{ xs: 12, md: 5 }}>
-                        <Box>
+                        <Box sx={{ width: 350, height: 280 }}>
                           {round.drawingData &&
                           round.drawingData.length > 50 ? (
                             <>
                               <Image
                                 src={round.drawingData}
-                                width={400}
-                                height={300}
+                                style={{
+                                  width: "100%",
+                                  height: "auto",
+                                  display: "block",
+                                }}
+                                width={500}
+                                height={400}
                                 alt={`Round ${round.roundNumber} Turn ${round.turnNumber} Drawing`}
                               />
                             </>

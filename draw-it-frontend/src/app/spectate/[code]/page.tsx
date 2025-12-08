@@ -3,6 +3,7 @@
 import { spectateGame } from "@/app/lib/api/SpectateGame/fetcher";
 import GameSpectator from "@/app/ui/components/GameSpectator";
 import { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
@@ -24,7 +25,12 @@ export default async function SpectatePage({ params }: SpectatePageProps) {
   const code = (await params).code;
   const gameData = await getGameData(code);
 
-  return <GameSpectator initialData={gameData} />;
+  return (
+    <>
+      <Link href={"/"}>Back to Home</Link>
+      <GameSpectator initialData={gameData} />
+    </>
+  );
 }
 
 export async function generateMetadata({
