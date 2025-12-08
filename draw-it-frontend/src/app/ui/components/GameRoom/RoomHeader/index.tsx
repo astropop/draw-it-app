@@ -1,30 +1,45 @@
-import { GameResponseDTO, GameStatus } from "@/app/types/game.type";
-import { Paper, Grid, Typography, Chip, Stack } from "@mui/material";
-import { connected } from "process";
+import { GameResponseDto, GameStatus } from "@/app/lib/game.type";
+import { getStatusColor, getStatusLabel } from "@/app/ui/utils";
+import { Paper, Grid, Typography, Chip, Stack, Box } from "@mui/material";
 
 export type RoomHeaderProps = {
-  gameData: GameResponseDTO;
-  localGameState: GameResponseDTO;
+  localGameState: GameResponseDto; // status in object can be changed later
   currentNickname: string;
-  isHost: boolean;
 };
 
-const RoomHeader = ({ props }: { props: RoomHeaderProps }) => {
+const RoomHeader = ({ localGameState, currentNickname }: RoomHeaderProps) => {
   return (
     <>
       <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
         <Grid container spacing={2} alignItems='center'>
           <Grid sx={{ xs: 12, md: 6 }}>
-            <Typography variant='h4' component='h1'>
-              Game Room:{" "}
-              <Chip label={props.gameData.gameCode} color='primary' />
-            </Typography>
-            <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
-              Theme: {props.localGameState.theme}
-            </Typography>
-            <Typography variant='caption' color='text.secondary'>
-              You: {props.currentNickname} ({props.isHost ? "Host" : "Player"})
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "baseline" }}>
+              <Typography
+                variant='h5'
+                color='text.secondary'
+                sx={{ mt: 1 }}
+                component='h1'
+              >
+                Theme: {localGameState.theme}
+              </Typography>
+              <Chip
+                label={getStatusLabel(localGameState.status)}
+                color={getStatusColor(localGameState.status)}
+                size='small'
+              />
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "baseline" }}>
+              <Typography variant='body2'>Game Room:</Typography>
+              <Chip label={localGameState.gameCode} color='primary' />
+            </Box>
+            <Box>
+              <Typography variant='caption' color='text.secondary'>
+                You: {currentNickname}
+              </Typography>
+              {localGameState.isHost && (
+                <Chip label='Host' color='primary' size='small' />
+              )}
+            </Box>
           </Grid>
 
           <Grid sx={{ textAlign: { xs: "left", md: "right" }, xs: 12, md: 6 }}>
@@ -33,14 +48,9 @@ const RoomHeader = ({ props }: { props: RoomHeaderProps }) => {
               spacing={1}
               justifyContent={{ xs: "flex-start", md: "flex-end" }}
             >
-              <Chip
-                label={connected ? "Connected" : "Disconnected"}
-                color={connected ? "success" : "error"}
-                size='small'
-              />
-              {props.localGameState.status === GameStatus.IN_PROGRESS && (
+              {localGameState.status === GameStatus.IN_PROGRESS && (
                 <Chip
-                  label={`Round ${props.localGameState.currentRound} / ${props.localGameState.maxRounds}`}
+                  label={`Round ${localGameState.currentRound} / ${localGameState.maxRounds}`}
                   color='info'
                   size='small'
                 />

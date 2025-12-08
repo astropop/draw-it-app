@@ -1,9 +1,8 @@
-// app/components/CreateGameForm.tsx
 "use client";
 
-import { gameApi } from "@/app/lib/api";
+import { createGame } from "@/app/lib/api/CreateGame/fetcher";
+import { GameMode } from "@/app/lib/game.type";
 import { CreateGameInput, createGameSchema } from "@/app/lib/validation";
-import { GameMode } from "@/app/types/game.type";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
@@ -33,7 +32,7 @@ export default function CreateGameForm() {
     watch,
     setValue,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isLoading, isValidating },
   } = useForm<CreateGameInput>({
     resolver: zodResolver(createGameSchema),
     defaultValues: {
@@ -47,28 +46,35 @@ export default function CreateGameForm() {
   });
 
   // get value in real time
-  const formValues = watch();
+  const formValues = {
+    hostNickname: watch("hostNickname"),
+    theme: watch("theme"),
+    maxRounds: watch("maxRounds"),
+    drawingTime: watch("drawingTime"),
+    guessingTime: watch("guessingTime"),
+    gameMode: watch("gameMode"),
+  };
 
   const onSubmit = async (data: CreateGameInput) => {
-    console.log("onSubmit", data);
-
     try {
       // Call API
-      const response = await gameApi.createGame(data);
+      const response = await createGame(data);
 
+      if (!response || !response.gameCode) {
+        setError("root", {
+          message: "Failed to create game",
+        });
+      }
       // Save to localStorage for rejoin
-      localStorage.setItem("sessionId", response.sessionId);
+      localStorage.setItem("playerSessionId", response.playerSessionId);
       localStorage.setItem("gameCode", response.gameCode);
       localStorage.setItem("nickname", data.hostNickname);
-      localStorage.setItem("lastGame", response.gameCode);
-      localStorage.setItem("lastNickname", data.hostNickname);
 
       // Redirect to game room
       router.push(`/game/${response.gameCode}`);
     } catch (error) {
       setError("root", {
-        message:
-          error instanceof Error ? error.message : "Failed to create game",
+        message: error instanceof Error ? error.message : "Error creating game",
       });
     }
   };
@@ -82,6 +88,9 @@ export default function CreateGameForm() {
       )}
 
       <Stack spacing={3}>
+        {/* Summary */}
+        <CreateGameSummary props={formValues} />
+        <Divider />
         {/* Host Nickname */}
         <TextField
           {...register("hostNickname")}
@@ -90,7 +99,6 @@ export default function CreateGameForm() {
           required
           fullWidth
           helperText='This will be your display name in the game'
-          // slotProps={{ htmlInput: { maxLength: 50 } }}
         />
         {errors.hostNickname && (
           <Typography component='span' color='error'>
@@ -106,8 +114,7 @@ export default function CreateGameForm() {
           required
           fullWidth
           placeholder='e.g., Animals, Food, Movies, Sports'
-          helperText='AI will generate 5 words related to this theme'
-          // slotProps={{ htmlInput: { maxLength: 100 } }}
+          helperText='AI will generate many words related to this theme'
         />
         {errors.theme && (
           <Typography component='caption' color='error'>
@@ -180,7 +187,7 @@ export default function CreateGameForm() {
             }
             min={30}
             max={300}
-            step={10}
+            step={5}
             valueLabelDisplay='auto'
             marks={[
               { value: 30, label: "30s" },
@@ -207,7 +214,7 @@ export default function CreateGameForm() {
             }
             min={30}
             max={180}
-            step={10}
+            step={5}
             valueLabelDisplay='auto'
             marks={[
               { value: 30, label: "30s" },
@@ -222,21 +229,18 @@ export default function CreateGameForm() {
           )}
         </Box>
 
-        <Divider />
-
-        {/* Summary */}
-        <CreateGameSummary props={formValues} />
-
         {/* Submit Button */}
         <Button
           type='submit'
           variant='contained'
           size='large'
           fullWidth
-          disabled={isSubmitting}
+          disabled={isSubmitting || isLoading || isValidating}
           sx={{ py: 1.5 }}
         >
-          {isSubmitting ? "Creating Game..." : "Create Game"}
+          {isSubmitting || isLoading || isValidating
+            ? "Creating Game..."
+            : "Create Game"}
         </Button>
 
         <Button variant='outlined' fullWidth onClick={() => router.push("/")}>

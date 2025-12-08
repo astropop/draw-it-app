@@ -1,4 +1,4 @@
-import { GuessSubmittedMessage } from "@/app/types/game.type";
+import { GuessSubmittedMessage } from "@/app/lib/game.type";
 import {
   Card,
   CardContent,

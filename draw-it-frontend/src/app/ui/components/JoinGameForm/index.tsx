@@ -1,7 +1,6 @@
-// app/components/JoinGameForm.tsx
 "use client";
 
-import { gameApi } from "@/app/lib/api";
+import { joinGame } from "@/app/lib/api/JoinGame/fetcher";
 import { JoinGameInput, joinGameSchema } from "@/app/lib/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ContentPasteGo } from "@mui/icons-material";
@@ -14,6 +13,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
@@ -26,7 +26,7 @@ export default function JoinGameForm() {
     // watch,
     setValue,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isLoading, isValidating },
   } = useForm<JoinGameInput>({
     // validate by zod
     resolver: zodResolver(joinGameSchema),
@@ -36,20 +36,20 @@ export default function JoinGameForm() {
     },
   });
 
-  // get value in real time
-  // const formValues = watch();
-
   const onSubmit = async (data: JoinGameInput) => {
     try {
       // Call API
-      const response = await gameApi.joinGame(data);
+      const response = await joinGame(data);
 
-      // Save to localStorage for rejoin
-      localStorage.setItem("sessionId", response.sessionId);
+      if (!response || !response.gameCode) {
+        setError("root", {
+          message: "Failed to join game",
+        });
+      }
+      // Save to localStorage
+      localStorage.setItem("playerSessionId", response.playerSessionId);
       localStorage.setItem("gameCode", response.gameCode);
       localStorage.setItem("nickname", data.nickname);
-      localStorage.setItem("lastGame", response.gameCode);
-      localStorage.setItem("lastNickname", data.nickname);
 
       // Redirect to game room
       router.push(`/game/${response.gameCode}`);
@@ -69,7 +69,7 @@ export default function JoinGameForm() {
       const cleaned = text.trim();
       setValue("gameCode", cleaned);
     } catch (err) {
-      console.error("Failed to read clipboard:", err);
+      alert("Failed to read clipboard");
     }
   };
 
@@ -94,7 +94,6 @@ export default function JoinGameForm() {
             helperText='Enter the game code'
             slotProps={{
               htmlInput: {
-                maxLength: 8,
                 style: {
                   letterSpacing: "0.1em",
                   fontSize: "1.2rem",
@@ -135,7 +134,6 @@ export default function JoinGameForm() {
           fullWidth
           placeholder='Enter your display name'
           helperText='This will be your name in the game'
-          slotProps={{ htmlInput: { maxLength: 50 } }}
         />
         {errors.nickname && (
           <Typography component='span' color='error' display={"block"}>
@@ -148,10 +146,12 @@ export default function JoinGameForm() {
           variant='contained'
           size='large'
           fullWidth
-          disabled={isSubmitting}
+          disabled={isSubmitting || isLoading || isValidating}
           sx={{ py: 1.5 }}
         >
-          {isSubmitting ? "Joining Game..." : "Join Game"}
+          {isSubmitting || isLoading || isValidating
+            ? "Joining Game..."
+            : "Join Game"}
         </Button>
 
         <Divider>OR</Divider>
@@ -161,11 +161,19 @@ export default function JoinGameForm() {
           <Button
             variant='outlined'
             fullWidth
-            onClick={() => router.push("/create")}
+            component={Link}
+            href='/create'
+            target='_blank'
           >
             Create New Game
           </Button>
-          <Button variant='outlined' fullWidth onClick={() => router.push("/")}>
+          <Button
+            variant='outlined'
+            fullWidth
+            component={Link}
+            href='/'
+            target='_blank'
+          >
             Browse Games
           </Button>
         </Stack>

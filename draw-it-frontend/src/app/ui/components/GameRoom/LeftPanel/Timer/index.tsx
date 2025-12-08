@@ -1,5 +1,5 @@
 import TimerIcon from "@mui/icons-material/Timer";
-import { GameResponseDTO } from "@/app/types/game.type";
+import { GameResponseDTO } from "@/app/lib/game.type";
 import {
   Card,
   CardContent,

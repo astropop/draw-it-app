@@ -1,12 +1,12 @@
 "use client";
 
-import { GameItemList } from "@/app/types/game.type";
+import { GameListItemResponseDto } from "@/app/lib/api/GetGameList/type";
+import { GameStatus } from "@/app/lib/game.type";
 import { Box, Card, CardContent, Chip, Typography } from "@mui/material";
-import { useRouter } from "next/navigation";
 import ButtonGameCard from "./_components/ButtonGameCard";
 
 type GameCardProps = {
-  game: GameItemList;
+  game: GameListItemResponseDto;
   getStatusLabel: (status: string) => string;
   getStatusColor: (
     status: string
@@ -21,16 +21,13 @@ type GameCardProps = {
 };
 
 const GameCard = ({ game, getStatusLabel, getStatusColor }: GameCardProps) => {
-  const router = useRouter();
   return (
     <>
       <Card
         sx={{
-          cursor: "pointer",
           "&:hover": { boxShadow: 6 },
           border: "1px solid gray",
         }}
-        onClick={() => router.push(`/spectate/${game.gameCode}`)}
       >
         <CardContent>
           <Box
@@ -40,7 +37,7 @@ const GameCard = ({ game, getStatusLabel, getStatusColor }: GameCardProps) => {
               mb: 2,
             }}
           >
-            <Typography variant='h6'>{game.gameCode}</Typography>
+            <Typography variant='h6'>Theme: {game.theme}</Typography>
             <Chip
               label={getStatusLabel(game.status)}
               color={getStatusColor(game.status)}
@@ -49,11 +46,11 @@ const GameCard = ({ game, getStatusLabel, getStatusColor }: GameCardProps) => {
           </Box>
 
           <Typography variant='body2' color='text.secondary' gutterBottom>
-            Chủ đề: {game.theme}
+            Game code: {game.gameCode}
           </Typography>
 
           <Typography variant='body2' color='text.secondary'>
-            Người chơi: {game.playerCount}
+            Players: {game.playerCount}
           </Typography>
 
           <Typography
@@ -62,10 +59,10 @@ const GameCard = ({ game, getStatusLabel, getStatusColor }: GameCardProps) => {
             display='block'
             sx={{ mt: 1 }}
           >
-            Tạo lúc: {new Date(game.createdAt).toLocaleString("vi-VN")}
+            Created at: {new Date(game.createdAt).toLocaleString("en-US")}
           </Typography>
 
-          {game.status === "IN_PROGRESS" && (
+          {game.status === GameStatus.IN_PROGRESS && (
             <ButtonGameCard
               url={`/spectate/${game.gameCode}`}
               props={{ variant: "outlined" }}
@@ -73,7 +70,7 @@ const GameCard = ({ game, getStatusLabel, getStatusColor }: GameCardProps) => {
             />
           )}
 
-          {game.status === "FINISHED" && (
+          {game.status === GameStatus.FINISHED && (
             <ButtonGameCard
               url={`/spectate/${game.gameCode}`}
               props={{ variant: "outlined" }}
@@ -81,9 +78,9 @@ const GameCard = ({ game, getStatusLabel, getStatusColor }: GameCardProps) => {
             />
           )}
 
-          {game.status === "WAITING" && (
+          {game.status === GameStatus.WAITING && (
             <ButtonGameCard
-              url={`/spectate/${game.gameCode}`}
+              url={`/join`}
               props={{ variant: "contained" }}
               textBtn={"Join"}
             />

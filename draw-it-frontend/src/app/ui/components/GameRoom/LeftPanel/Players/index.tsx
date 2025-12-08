@@ -1,23 +1,21 @@
-import { GameResponseDTO, GameStatus, PlayerDTO } from "@/app/types/game.type";
-import {
-  Box,
-  Typography,
-  Divider,
-  List,
-  ListItem,
-  IconButton,
-  ListItemText,
-  Chip,
-} from "@mui/material";
+import { GameResponseDto, GameStatus } from "@/app/lib/game.type";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PeopleIcon from "@mui/icons-material/People";
+import {
+  Box,
+  Chip,
+  Divider,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
+} from "@mui/material";
 export type PlayerProps = {
-  currentPlayers: PlayerDTO[];
-  localGameState: GameResponseDTO;
-  isHost: boolean;
-  handleKick: (targetSessionId: string) => void;
-  isMyTurn: boolean;
-  currentSessionId: string;
+  localGameState: GameResponseDto;
+  handleKick: (targetPlayerSessionId: string) => Promise<void>; // players in object can be changed later
+  currentPlayerSessionId: string;
+  isHost: boolean; // current player is host or not
 };
 
 const Players = ({ props }: { props: PlayerProps }) => {
@@ -26,23 +24,24 @@ const Players = ({ props }: { props: PlayerProps }) => {
       <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
         <PeopleIcon sx={{ mr: 1 }} />
         <Typography variant='h6'>
-          Players ({props.currentPlayers.length})
+          Players ({props.localGameState.players.length})
         </Typography>
       </Box>
 
       <Divider sx={{ mb: 2 }} />
 
       <List dense>
-        {props.currentPlayers.map((player) => (
+        {props.localGameState.players.map((player) => (
           <ListItem
-            key={player.sessionId}
+            key={player.playerSessionId}
             secondaryAction={
               props.isHost &&
               !player.isHost &&
+              props.currentPlayerSessionId !== player.playerSessionId &&
               props.localGameState.status === GameStatus.WAITING && (
                 <IconButton
                   edge='end'
-                  onClick={() => props.handleKick(player.sessionId)}
+                  onClick={() => props.handleKick(player.playerSessionId)}
                   color='error'
                   size='small'
                 >
@@ -58,11 +57,7 @@ const Players = ({ props }: { props: PlayerProps }) => {
                   {player.isHost && (
                     <Chip label='Host' color='primary' size='small' />
                   )}
-                  {props.localGameState.status === GameStatus.IN_PROGRESS &&
-                    props.isMyTurn &&
-                    player.sessionId === props.currentSessionId && (
-                      <Chip label='Drawing' color='secondary' size='small' />
-                    )}
+                  {/* Icon drawing, guessing */}
                 </Box>
               }
               secondary={`Score: ${player.score || 0}`}

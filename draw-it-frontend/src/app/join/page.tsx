@@ -1,9 +1,9 @@
-// app/join/page.tsx
+"use server";
 
 import { Container, Paper, Typography } from "@mui/material";
 import JoinGameForm from "../ui/components/JoinGameForm";
 
-export default function JoinGamePage() {
+export default async function JoinGamePage() {
   return (
     <Container maxWidth='sm' sx={{ py: 4 }}>
       <Paper elevation={3} sx={{ p: 4 }}>

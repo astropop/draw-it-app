@@ -1,35 +1,207 @@
+"use client";
+import { GameResponseDto } from "@/app/lib/game.type";
 import {
-  Box,
-  Typography,
-  Stack,
-  Button,
   Alert,
+  Box,
+  Button,
+  Stack,
   TextField,
+  Typography,
 } from "@mui/material";
 import DrawingCanvas from "../../../DrawingCanvas";
-import { GameResponseDTO } from "@/app/types/game.type";
+import { useEffect, useState } from "react";
+import { SubmitDrawingRequestDto } from "@/app/lib/api/SubmitDrawing/type";
+import { submitDrawing } from "@/app/lib/api/SubmitDrawing/fetcher";
 import Image from "next/image";
+import { SubmitGuessRequestDto } from "@/app/lib/api/SubmitGuess/type";
+import { submitGuess } from "@/app/lib/api/SubmitGuess/fetcher";
+import { SubmitGuessInput, submitGuessSchema } from "@/app/lib/validation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { getGame } from "@/app/lib/api/GetGame/fetcher";
+import { useRouter } from "next/navigation";
 
 export type GameAreaInProgressProps = {
-  localGameState: GameResponseDTO;
-  isMyTurn: boolean;
-  selectedWord: string;
-  currentDrawing: string | null;
-  roundComplete: boolean;
-  showWarning: boolean;
-  warningMessage: string;
-  handleWordSelect: (word: string) => void;
-  handleSubmitDrawing: (imageData: string) => Promise<void>;
-  guess: string;
-  setGuess: (value: string) => void;
-  handleSubmitGuess: () => Promise<void>;
+  localGameState: GameResponseDto;
+  action: string; // draw, guess, wait
+  setLocalGameState: (data: GameResponseDto) => void;
+  currentPlayerSessionId: string;
+  onSubmitDrawing: () => Promise<void>;
+  onSubmitGuess: () => Promise<void>;
 };
 
 const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
+  /*
+   * constants
+   */
+  const route = useRouter();
+  /*
+   * State management
+   */
+  const [wordSelected, setWordSelected] = useState<string>("");
+  const [isCorrectGuessing, setIsCorrectGuessing] = useState<boolean>(); // wrong, corrected
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [timerActive, setTimerActive] = useState(false);
+  const [guessViewActive, setGuessViewActive] = useState(false);
+  const [currentDrawingData, setCurrentDrawingData] = useState<string>("");
+
+  /*
+   * functions
+   */
+  const handleSubmitDrawing = async (imageData: string) => {
+    const gameCode = props.localGameState.gameCode;
+    const submitData = {
+      roundNumber: props.localGameState.currentRound,
+      turnNumber: props.localGameState.currentTurnNumber,
+      drawingData: imageData,
+      selectedWord: wordSelected,
+      drawingTime: props.localGameState.drawingTime || 0,
+    } as SubmitDrawingRequestDto;
+
+    console.log("handleSubmitDrawing", submitData);
+
+    const response = await submitDrawing(gameCode, submitData);
+
+    if (!response) {
+      console.log("Error Submit Drawing");
+      return;
+    }
+
+    // Reset local state and refresh from server
+    setWordSelected("");
+    setTimerActive(false);
+    setTimeLeft(0);
+
+    // Call parent callback to refresh game state
+    await props.onSubmitDrawing();
+
+    console.log("ok drawing", response.success);
+  };
+
+  const handleWordSelect = (word: string) => {
+    if (confirm("Are you confirm to pick word : " + word)) {
+      setWordSelected(word);
+    }
+  };
+
+  // Start drawing timer
+  const handleStartDrawing = () => {
+    setTimerActive(true);
+    setTimeLeft(props.localGameState.drawingTime || 60);
+  };
+
+  // Start guessing timer and show image
+  const handleStartGuessing = () => {
+    setGuessViewActive(true);
+    setTimerActive(true);
+    setTimeLeft(props.localGameState.guessingTime || 30);
+  };
+
+  const handleSubmitGuess = async (data: SubmitGuessInput) => {
+    const gameCode = props.localGameState.gameCode;
+    const submitData = {
+      roundNumber: props.localGameState.currentRound,
+      turnNumber: props.localGameState.currentTurnNumber,
+      guess: data.guess,
+      guessingTime: props.localGameState.guessingTime || 0,
+    } as SubmitGuessRequestDto;
+    console.log("handleSubmitGuess", submitData);
+
+    const response = await submitGuess(gameCode, submitData);
+
+    if (!response) {
+      console.log("Error Submit Guess");
+      return;
+    }
+
+    if (!response.isCorrect) {
+      setIsCorrectGuessing(false);
+      return;
+    }
+
+    // Reset and refresh game state
+    setIsCorrectGuessing(undefined);
+    setTimerActive(false);
+    setTimeLeft(0);
+    setGuessViewActive(false);
+
+    // Call parent callback to refresh game state
+    await props.onSubmitGuess();
+    console.log("ok guess", response.isCorrect);
+  };
+
+  /*
+   * Hooks area
+   */
+
+  // verification for form
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    setError,
+    formState: { errors, isSubmitting, isLoading },
+  } = useForm<SubmitGuessInput>({
+    // validate by zod
+    resolver: zodResolver(submitGuessSchema),
+    defaultValues: {
+      guess: "",
+    },
+  });
+  const formValues = {
+    guess: watch("guess"),
+  };
+
+  // Countdown timer effect with auto-submit logic
+  useEffect(() => {
+    if (!timerActive || timeLeft <= 0) return;
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        const newTime = prev - 1;
+
+        // When timer hits 0
+        if (newTime <= 0) {
+          setTimerActive(false);
+
+          // Schedule auto-submit after render completes
+          // Using setTimeout prevents setState-in-render error
+          setTimeout(async () => {
+            // Auto-submit based on action
+            if (props.action === "draw" && wordSelected) {
+              // Auto-submit drawing (even if empty)
+              await handleSubmitDrawing(currentDrawingData);
+            } else if (props.action === "guess") {
+              // Auto-submit guess (even if empty)
+              await handleSubmitGuess({ guess: formValues.guess });
+            }
+          }, 0);
+
+          return 0;
+        }
+        return newTime;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [
+    timerActive,
+    timeLeft,
+    props.action,
+    wordSelected,
+    currentDrawingData,
+    formValues.guess,
+    props,
+    handleSubmitDrawing,
+    handleSubmitGuess,
+  ]);
+  //
+
   return (
     <>
-      {/* WORD SELECTION (My Turn, No Word Selected) */}
-      {props.isMyTurn && !props.selectedWord && (
+      {/* WORD SELECTION - draw */}
+      {props.action === "draw" && !wordSelected && (
         <Box sx={{ textAlign: "center", py: 4 }}>
           <Typography variant='h5' gutterBottom>
             Choose a word to draw:
@@ -47,7 +219,7 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
                 key={word}
                 variant='outlined'
                 size='large'
-                onClick={() => props.handleWordSelect(word)}
+                onClick={() => handleWordSelect(word)}
                 sx={{ minWidth: 120, mb: 1 }}
               >
                 {word}
@@ -57,89 +229,132 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
         </Box>
       )}
 
-      {/* DRAWING CANVAS (My Turn, Word Selected) */}
-      {props.isMyTurn && props.selectedWord && (
+      {/* DRAWING CANVAS - draw */}
+      {props.action === "draw" && wordSelected && (
         <Box>
           <Alert severity='info' sx={{ mb: 2 }}>
-            Draw: <strong>{props.selectedWord}</strong>
+            Draw: <strong>{wordSelected}</strong>
+            {timerActive && (
+              <Typography component='span' sx={{ ml: 2 }}>
+                Time left: <strong>{timeLeft}s</strong>
+              </Typography>
+            )}
+            {!timerActive && (
+              <Button
+                variant='contained'
+                size='small'
+                sx={{ ml: 2 }}
+                onClick={handleStartDrawing}
+              >
+                Start Drawing
+              </Button>
+            )}
           </Alert>
 
-          {props.showWarning && (
-            <Alert severity='error' sx={{ mb: 2 }}>
-              {props.warningMessage}
-            </Alert>
+          {timerActive && (
+            <DrawingCanvas
+              handleSubmitDrawing={handleSubmitDrawing}
+              onDrawingUpdate={setCurrentDrawingData}
+            />
           )}
-
-          <DrawingCanvas
-            selectedWord={props.selectedWord}
-            onSubmit={props.handleSubmitDrawing}
-            timeLimit={props.localGameState.drawingTime!}
-          />
         </Box>
       )}
 
-      {/* GUESSING (Other's Turn, Drawing Shown) */}
-      {!props.isMyTurn && props.currentDrawing && (
+      {/* GUESSING */}
+      {props.action === "guess" && (
         <Box>
           <Typography variant='h6' gutterBottom>
             Guess the drawing:
           </Typography>
 
-          <Box
-            sx={{
-              border: "2px solid",
-              borderColor: "divider",
-              borderRadius: 1,
-              overflow: "hidden",
-              mb: 2,
-            }}
-          >
-            <Image
-              src={props.currentDrawing}
-              alt='Current Drawing'
-              style={{
-                width: "100%",
-                height: "auto",
-                display: "block",
-              }}
-            />
-          </Box>
-
-          {!props.roundComplete && (
-            <Box sx={{ display: "flex", gap: 2 }}>
-              <TextField
-                value={props.guess}
-                onChange={(e) => props.setGuess(e.target.value)}
-                placeholder='Type your guess...'
-                fullWidth
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    props.handleSubmitGuess();
-                  }
-                }}
-                disabled={props.roundComplete}
-              />
+          {/* START GUESS BUTTON - show before guess view is active */}
+          {!guessViewActive && (
+            <Box sx={{ mb: 3 }}>
               <Button
                 variant='contained'
-                onClick={props.handleSubmitGuess}
-                disabled={!props.guess.trim() || props.roundComplete}
-                sx={{ minWidth: 100 }}
+                size='large'
+                onClick={handleStartGuessing}
               >
-                Submit
+                Start Guess
               </Button>
             </Box>
           )}
 
-          {props.roundComplete && (
-            <Alert severity='success'>
-              ✓ Your answer has been submitted! Waiting for others...
-            </Alert>
+          {/* DRAWING AND GUESS FORM - show after Start Guess is clicked */}
+          {guessViewActive && (
+            <>
+              <Box
+                sx={{
+                  border: "2px solid",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  overflow: "hidden",
+                  mb: 2,
+                }}
+              >
+                {props.localGameState.guessingImageData && (
+                  <Image
+                    src={props.localGameState.guessingImageData}
+                    alt={`Round ${props.localGameState.currentRound}`}
+                    style={{
+                      display: "block",
+                    }}
+                    width={500}
+                    height={400}
+                  />
+                )}
+              </Box>
+
+              <Alert severity={timerActive ? "info" : "warning"} sx={{ mb: 2 }}>
+                {timerActive && (
+                  <Typography component='span'>
+                    Time left: <strong>{timeLeft}s</strong>
+                  </Typography>
+                )}
+              </Alert>
+
+              <Box
+                component='form'
+                onSubmit={handleSubmit(handleSubmitGuess)}
+                sx={{ display: "flex", gap: 2, flexDirection: "column" }}
+              >
+                <TextField
+                  placeholder='Type your guess...'
+                  fullWidth
+                  {...register("guess")}
+                  error={!!errors.guess}
+                  disabled={isSubmitting || isLoading}
+                />
+                {errors.guess && (
+                  <Typography component='span' color='error' display={"block"}>
+                    {errors.guess.message}
+                  </Typography>
+                )}
+                {isCorrectGuessing === false && (
+                  <Typography
+                    component='span'
+                    color='warning'
+                    display={"block"}
+                  >
+                    Your guess is wrong. Please guess another word!
+                  </Typography>
+                )}
+                <Button
+                  variant='contained'
+                  sx={{ minWidth: 100 }}
+                  disabled={isSubmitting || isLoading}
+                  type='submit'
+                >
+                  Submit
+                </Button>
+              </Box>
+            </>
           )}
         </Box>
       )}
 
-      {/* WAITING (Other's Turn, No Drawing Yet) */}
-      {!props.isMyTurn && !props.currentDrawing && (
+      {/* WAITING */}
+      {props.action === "wait" && (
         <Box sx={{ textAlign: "center", py: 8 }}>
           <Typography variant='h6' color='text.secondary'>
             Waiting for someone to draw...

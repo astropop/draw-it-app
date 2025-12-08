@@ -1,10 +1,9 @@
-import { GameResponseDTO, PlayerDTO } from "@/app/types/game.type";
+import { GameResponseDto } from "@/app/lib/game.type";
 import { Box, Typography } from "@mui/material";
 
 export type GameAreaWaitingProps = {
-  localGameState: GameResponseDTO;
+  localGameState: GameResponseDto;
   isHost: boolean;
-  currentPlayers: PlayerDTO[];
 };
 const GameAreaWaiting = ({ props }: { props: GameAreaWaitingProps }) => {
   return (
@@ -12,11 +11,11 @@ const GameAreaWaiting = ({ props }: { props: GameAreaWaitingProps }) => {
       <Box sx={{ textAlign: "center", py: 8 }}>
         <Typography variant='h5' gutterBottom>
           {props.isHost
-            ? 'Click "Start Game" when ready!'
+            ? 'Click "Start Game" when having enough players!'
             : "Waiting for host to start..."}
         </Typography>
         <Typography variant='body2' color='text.secondary'>
-          {props.currentPlayers.length} players joined
+          {props.localGameState.players.length} players joined
         </Typography>
       </Box>
     </>
