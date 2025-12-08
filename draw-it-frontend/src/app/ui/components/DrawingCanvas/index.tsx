@@ -156,9 +156,6 @@ export default function DrawingCanvas({
     }
   };
 
-  /*
-   * Hooks area
-   */
   const initializeCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -186,17 +183,12 @@ export default function DrawingCanvas({
       }
     }
   };
+  /*
+   * Hooks area
+   */
 
   useEffect(() => {
     initializeCanvas();
-
-    // Lắng nghe sự kiện resize
-    const handleResize = () => {
-      initializeCanvas();
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
