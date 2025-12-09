@@ -2,7 +2,7 @@ export interface SubmitGuessRequestDto {
   roundNumber: number;
   turnNumber: number;
   guess: string;
-  guessingTime: number;
+  guessingTimeLeft: number;
   playerSessionId: string;
 }
 

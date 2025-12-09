@@ -11,6 +11,7 @@ export const submitDrawing = async (
   const playerSessionId = cookiesStore.get("playerSessionId")?.value;
 
   const submitData = { ...data, playerSessionId };
+  console.log("submitDrawing", submitData.drawingTimeLeft);
 
   return await fetchApi<SubmitDrawingResponseDto>(
     `/api/games/${gameCode}/submit-drawing`,

@@ -27,7 +27,6 @@ export default async function SpectatePage({ params }: SpectatePageProps) {
 
   return (
     <>
-      <Link href={"/"}>Back to Home</Link>
       <GameSpectator initialData={gameData} />
     </>
   );

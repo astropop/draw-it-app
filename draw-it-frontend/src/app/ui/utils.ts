@@ -18,7 +18,7 @@ const getStatusLabel = (status: string) => {
     case GameStatus.WAITING:
       return "Waiting";
     case GameStatus.IN_PROGRESS:
-      return "In Progress";
+      return "Playing";
     case GameStatus.FINISHED:
       return "Finished";
     default:

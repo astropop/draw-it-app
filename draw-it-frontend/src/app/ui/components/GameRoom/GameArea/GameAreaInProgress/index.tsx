@@ -44,18 +44,21 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
   const [timerActive, setTimerActive] = useState(false);
   const [guessViewActive, setGuessViewActive] = useState(false);
   const [currentDrawingData, setCurrentDrawingData] = useState<string>("");
+  const [isSubmittingToServer, setIsSubmittingToServer] =
+    useState<boolean>(false);
 
   /*
    * functions
    */
   const handleSubmitDrawing = async (imageData: string) => {
+    setIsSubmittingToServer(true);
     const gameCode = props.localGameState.gameCode;
     const submitData = {
       roundNumber: props.localGameState.currentRound,
       turnNumber: props.localGameState.currentTurnNumber,
       drawingData: imageData,
       selectedWord: wordSelected,
-      drawingTime: props.localGameState.drawingTime || 0,
+      drawingTimeLeft: timeLeft || 0,
     } as SubmitDrawingRequestDto;
 
     console.log("handleSubmitDrawing", submitData);
@@ -64,6 +67,7 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
 
     if (!response) {
       console.log("Error Submit Drawing");
+      setIsSubmittingToServer(false);
       return;
     }
 
@@ -71,7 +75,7 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
     setWordSelected("");
     setTimerActive(false);
     setTimeLeft(0);
-
+    setIsSubmittingToServer(false);
     // Call parent callback to refresh game state
     await props.onSubmitDrawing();
 
@@ -98,12 +102,13 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
   };
 
   const handleSubmitGuess = async (data: SubmitGuessInput) => {
+    setIsSubmittingToServer(true);
     const gameCode = props.localGameState.gameCode;
     const submitData = {
       roundNumber: props.localGameState.currentRound,
       turnNumber: props.localGameState.currentTurnNumber,
       guess: data.guess,
-      guessingTime: props.localGameState.guessingTime || 0,
+      guessingTimeLeft: timeLeft || 0,
     } as SubmitGuessRequestDto;
     console.log("handleSubmitGuess", submitData);
 
@@ -111,11 +116,13 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
 
     if (!response) {
       console.log("Error Submit Guess");
+      setIsSubmittingToServer(false);
       return;
     }
 
     if (!response.isCorrect) {
       setIsCorrectGuessing(false);
+      setIsSubmittingToServer(false);
       return;
     }
 
@@ -124,6 +131,7 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
     setTimerActive(false);
     setTimeLeft(0);
     setGuessViewActive(false);
+    setIsSubmittingToServer(false);
 
     // Call parent callback to refresh game state
     await props.onSubmitGuess();
@@ -155,7 +163,7 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
 
   // Countdown timer effect with auto-submit logic
   useEffect(() => {
-    if (!timerActive || timeLeft <= 0) return;
+    if (!timerActive || timeLeft <= 0 || isSubmittingToServer) return;
 
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
@@ -255,6 +263,7 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
             <DrawingCanvas
               handleSubmitDrawing={handleSubmitDrawing}
               onDrawingUpdate={setCurrentDrawingData}
+              isSubmittingToServer={isSubmittingToServer}
             />
           )}
         </Box>

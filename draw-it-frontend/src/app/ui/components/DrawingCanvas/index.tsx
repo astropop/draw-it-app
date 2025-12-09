@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 interface DrawingCanvasProps {
   handleSubmitDrawing?: (imageData: string) => Promise<void>;
   onDrawingUpdate?: (imageData: string) => void;
+  isSubmittingToServer: boolean;
 }
 
 interface Coordinates {
@@ -27,6 +28,7 @@ type ToolType = "pen" | "eraser";
 export default function DrawingCanvas({
   handleSubmitDrawing,
   onDrawingUpdate,
+  isSubmittingToServer,
 }: DrawingCanvasProps) {
   /*
    * constants
@@ -350,7 +352,11 @@ export default function DrawingCanvas({
           Clear
         </Button>
         {handleSubmitDrawing && (
-          <Button variant='contained' onClick={handleSubmit}>
+          <Button
+            variant='contained'
+            onClick={handleSubmit}
+            disabled={isSubmittingToServer}
+          >
             Submit Drawing
           </Button>
         )}
