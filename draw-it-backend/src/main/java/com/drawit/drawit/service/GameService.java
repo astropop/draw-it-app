@@ -121,6 +121,7 @@ public class GameService {
         game.setMaxRounds(request.getMaxRounds());
         game.setDrawingTime(request.getDrawingTime());
         game.setGuessingTime(request.getGuessingTime());
+        game.setCreatedAt(LocalDateTime.now());
 
         // Save game first to get ID
         game = gameRepository.save(game);
@@ -461,6 +462,7 @@ public class GameService {
         redisState.setCurrentRound(redisState.getCurrentRound() + 1); // round = 1
         redisState.setCurrentTurnNum(redisState.getCurrentTurnNum() + 1); //  turn 1 :  drawing, turn 2: guessing
         redisState.setCurrentDrawerSessionId(firstDrawer.getPlayerSessionId()); // TODO update drawer and guesser
+        redisState.setStartedAt(game.getStartedAt());
 
         // Initialize first round, round have the same attribute to spectator
         SpectateGameRoundDto firstRound = SpectateGameRoundDto.builder()
@@ -598,7 +600,7 @@ public class GameService {
         currentRound.setSelectedWord(request.getSelectedWord());
         currentRound.setDrawingData(request.getDrawingData());
         currentRound.setContainingText(containingKeyword);
-        currentRound.setDrawingTime(request.getDrawingTime());
+        currentRound.setDrawingTime(redisState.getDrawingTime() - request.getDrawingTimeLeft());
         currentRound.setPenaltyPoints(penalty);
         currentRound.setSubmitAt(LocalDateTime.now());
 
@@ -691,7 +693,7 @@ public class GameService {
             // Base points: Max = max time each guessing round
             // Bonus: guess sooner get more points
 
-            pointsEarned = redisState.getGuessingTime() - request.getGuessingTime(); // Max = guessing time, min : 0
+            pointsEarned = redisState.getGuessingTime() - (redisState.getGuessingTime() - request.getGuessingTimeLeft()); // Max = guessing time, min : 0
             // Update player score
             guesser.setScore(guesser.getScore() + pointsEarned);
         }
@@ -710,7 +712,7 @@ public class GameService {
 
         // guess correct move to next step
         // or time out
-        if (isCorrect || (redisState.getGuessingTime() - request.getGuessingTime() <= 0)) {
+        if (isCorrect || (request.getGuessingTimeLeft() <= 0)) {
             // save history to db
             saveRoundHistoryToDB(redisState, currentRound, gameCode);
             // handle turn
@@ -892,7 +894,6 @@ public class GameService {
      * @param redisState redis with all information of rounds
      */
     private void finishGame(String gameCode, GameStateRedisModel redisState) {
-        redisState.setStatus(GameStatus.FINISHED);
 
         // Update DB
         Game game = gameRepository.findByGameCode(gameCode).orElseThrow(() -> new RuntimeException("Game not found"));
@@ -900,6 +901,11 @@ public class GameService {
         game.setStatus(GameStatus.FINISHED);
         game.setFinishedAt(LocalDateTime.now());
         gameRepository.save(game);
+
+        // set redis's field
+
+        redisState.setStatus(GameStatus.FINISHED);
+        redisState.setFinishedAt(game.getFinishedAt());
 
         // Update player scores in DB
         for (PlayerDto player : redisState.getPlayers()) {

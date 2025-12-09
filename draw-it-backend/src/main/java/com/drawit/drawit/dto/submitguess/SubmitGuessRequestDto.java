@@ -9,6 +9,6 @@ public class SubmitGuessRequestDto {
     private Integer roundNumber;
     private Integer turnNumber;
     private String guess; // guessing text
-    private Integer guessingTime; // time for drawing
+    private Integer guessingTimeLeft; // time for drawing
     private String playerSessionId;
 }
