@@ -10,8 +10,11 @@ export default async function JoinGamePage() {
         <Typography variant='h4' component='h1' gutterBottom>
           Join Game
         </Typography>
-        <Typography variant='body2' color='text.secondary' sx={{ mb: 3 }}>
+        <Typography variant='subtitle2' color='text.secondary' sx={{ mb: 1 }}>
           Enter the game code to join an existing game
+        </Typography>
+        <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
+          ※ You cannot join a game when it is playing
         </Typography>
 
         <JoinGameForm />
