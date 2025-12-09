@@ -45,7 +45,13 @@ export default function RootLayout({
           </Box>
           {children}
           <Box
-            sx={{ mt: 4, p: 2, backgroundColor: "#f5f5f5", borderRadius: 1 }}
+            sx={{
+              mt: 4,
+              p: 2,
+              backgroundColor: "#f5f5f5",
+              borderRadius: 1,
+              textAlign: "center",
+            }}
           >
             <Typography variant='caption' color='text.secondary'>
               Author : Tai Le - Do not copy
