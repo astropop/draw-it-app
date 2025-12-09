@@ -1,5 +1,11 @@
 "use client";
+import { submitDrawing } from "@/app/lib/api/SubmitDrawing/fetcher";
+import { SubmitDrawingRequestDto } from "@/app/lib/api/SubmitDrawing/type";
+import { submitGuess } from "@/app/lib/api/SubmitGuess/fetcher";
+import { SubmitGuessRequestDto } from "@/app/lib/api/SubmitGuess/type";
 import { GameResponseDto } from "@/app/lib/game.type";
+import { SubmitGuessInput, submitGuessSchema } from "@/app/lib/validation";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
   Box,
@@ -8,18 +14,11 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import DrawingCanvas from "../../../DrawingCanvas";
-import { useEffect, useState } from "react";
-import { SubmitDrawingRequestDto } from "@/app/lib/api/SubmitDrawing/type";
-import { submitDrawing } from "@/app/lib/api/SubmitDrawing/fetcher";
 import Image from "next/image";
-import { SubmitGuessRequestDto } from "@/app/lib/api/SubmitGuess/type";
-import { submitGuess } from "@/app/lib/api/SubmitGuess/fetcher";
-import { SubmitGuessInput, submitGuessSchema } from "@/app/lib/validation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { getGame } from "@/app/lib/api/GetGame/fetcher";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import DrawingCanvas from "../../../DrawingCanvas";
 
 export type GameAreaInProgressProps = {
   localGameState: GameResponseDto;
@@ -204,7 +203,6 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
     handleSubmitDrawing,
     handleSubmitGuess,
   ]);
-  //
 
   return (
     <>

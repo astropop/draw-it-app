@@ -162,27 +162,23 @@ export default function DrawingCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const ctx = canvas.getContext("2d");
+
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
 
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
 
-    const ctx = canvas.getContext("2d");
     if (ctx) {
+      //Our first draw
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
       ctx.scale(dpr, dpr);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       setContext(ctx);
-
-      // Restore previous drawing if exists
-      if (canvasImageRef.current) {
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0);
-        };
-        img.src = canvasImageRef.current;
-      }
     }
   };
   /*

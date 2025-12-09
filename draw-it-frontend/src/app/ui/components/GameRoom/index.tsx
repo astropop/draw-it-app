@@ -131,8 +131,6 @@ export default function GameRoom({ gameData }: GameRoomProps) {
             </CardContent>
           </Card>
           <Instructions />
-          <br></br>
-          Timer
         </Grid>
 
         {/* Middle Panel - Game Area */}
