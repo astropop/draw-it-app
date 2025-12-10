@@ -6,20 +6,12 @@ import { SubmitGuessRequestDto } from "@/app/lib/api/SubmitGuess/type";
 import { GameResponseDto } from "@/app/lib/game.type";
 import { SubmitGuessInput, submitGuessSchema } from "@/app/lib/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Alert,
-  Box,
-  Button,
-  Grid,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Alert, Box, Button, Grid, TextField, Typography } from "@mui/material";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import DrawingCanvas from "../../../DrawingCanvas";
+import DrawingCanvas from "../_component/DrawingCanvas";
 
 export type GameAreaInProgressProps = {
   localGameState: GameResponseDto;
@@ -162,47 +154,28 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
 
   // Countdown timer effect with auto-submit logic
   useEffect(() => {
-    if (!timerActive || timeLeft <= 0 || isSubmittingToServer) return;
+    if (!timerActive || isSubmittingToServer) return;
 
     const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        const newTime = prev - 1;
-
-        // When timer hits 0
-        if (newTime <= 0) {
-          setTimerActive(false);
-
-          // Schedule auto-submit after render completes
-          // Using setTimeout prevents setState-in-render error
-          setTimeout(async () => {
-            // Auto-submit based on action
-            if (props.action === "draw" && wordSelected) {
-              // Auto-submit drawing (even if empty)
-              await handleSubmitDrawing(currentDrawingData);
-            } else if (props.action === "guess") {
-              // Auto-submit guess (even if empty)
-              await handleSubmitGuess({ guess: formValues.guess });
-            }
-          }, 0);
-
-          return 0;
-        }
-        return newTime;
-      });
+      const newTime = timeLeft - 1;
+      setTimeLeft(newTime); // count down by 1 sec
+      if (timeLeft <= 0) {
+        setTimeout(async () => {
+          // Auto-submit based on action
+          if (props.action === "draw" && wordSelected) {
+            // Auto-submit drawing (even if empty)
+            await handleSubmitDrawing(currentDrawingData);
+          } else if (props.action === "guess") {
+            // Auto-submit guess (even if empty)
+            await handleSubmitGuess({ guess: formValues.guess });
+          }
+        }, 0);
+        clearInterval(interval);
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [
-    timerActive,
-    timeLeft,
-    props.action,
-    wordSelected,
-    currentDrawingData,
-    formValues.guess,
-    props,
-    handleSubmitDrawing,
-    handleSubmitGuess,
-  ]);
+  }, [timerActive, timeLeft, isSubmittingToServer]);
 
   return (
     <>

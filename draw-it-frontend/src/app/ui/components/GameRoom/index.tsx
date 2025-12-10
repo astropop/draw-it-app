@@ -11,6 +11,7 @@ import Instructions from "./RightPanel/Instructions";
 import RoomHeader from "./RoomHeader";
 import { getGame } from "@/app/lib/api/GetGame/fetcher";
 import { startGame } from "@/app/lib/api/StartGame/fetcher";
+import { useRouter } from "next/navigation";
 
 type GameRoomProps = {
   gameData: GameResponseDto;
@@ -25,6 +26,7 @@ export default function GameRoom({ gameData }: GameRoomProps) {
    * constants area
    */
   const isHost = gameData.isHost;
+  const route = useRouter();
   /*
    * State management
    */
@@ -81,6 +83,13 @@ export default function GameRoom({ gameData }: GameRoomProps) {
     setCurrentPlayerSessionId(sessionId);
     setCurrentNickname(nickname);
   }, []);
+
+  // redirect page after game is finished
+  useEffect(() => {
+    if (localGameState.status === GameStatus.FINISHED) {
+      route.push(`/spectate/${localGameState.gameCode}`);
+    }
+  }, [localGameState]);
 
   // Auto-refresh game state when in progress (every 3 seconds)
   // useEffect(() => {
