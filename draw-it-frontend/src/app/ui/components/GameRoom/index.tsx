@@ -1,7 +1,7 @@
 "use client";
 
 import { GameResponseDto, GameStatus } from "@/app/lib/game.type";
-import { Card, CardContent, Container, Grid } from "@mui/material";
+import { Card, CardContent, Container, Grid, Stack } from "@mui/material";
 import { useEffect, useState } from "react";
 import GameAreaInProgress from "./GameArea/GameAreaInProgress";
 import GameAreaWaiting from "./GameArea/GameAreaWaiting";
@@ -103,7 +103,7 @@ export default function GameRoom({ gameData }: GameRoomProps) {
       />
 
       {/* Main Content */}
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         {/* Left Panel - Players */}
         <Grid sx={{ xs: 12, md: 2 }}>
           <Card>
@@ -134,23 +134,29 @@ export default function GameRoom({ gameData }: GameRoomProps) {
         </Grid>
 
         {/* Middle Panel - Game Area */}
-        <Grid sx={{ xs: 12, md: 10 }}>
-          {localGameState.status === GameStatus.WAITING && (
-            <GameAreaWaiting props={{ localGameState, isHost }} />
-          )}
+        <Grid sx={{ xs: 12, md: 10 }} size='grow'>
+          <Stack spacing={2} sx={{ height: "100%" }}>
+            <Card sx={{ height: "100%" }}>
+              <CardContent>
+                {localGameState.status === GameStatus.WAITING && (
+                  <GameAreaWaiting props={{ localGameState, isHost }} />
+                )}
 
-          {localGameState.status === GameStatus.IN_PROGRESS && (
-            <GameAreaInProgress
-              props={{
-                localGameState,
-                action: localGameState.action,
-                setLocalGameState,
-                currentPlayerSessionId,
-                onSubmitDrawing: refreshGameState,
-                onSubmitGuess: refreshGameState,
-              }}
-            />
-          )}
+                {localGameState.status === GameStatus.IN_PROGRESS && (
+                  <GameAreaInProgress
+                    props={{
+                      localGameState,
+                      action: localGameState.action,
+                      setLocalGameState,
+                      currentPlayerSessionId,
+                      onSubmitDrawingCallback: refreshGameState,
+                      onSubmitGuessCallback: refreshGameState,
+                    }}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </Stack>
         </Grid>
       </Grid>
     </Container>

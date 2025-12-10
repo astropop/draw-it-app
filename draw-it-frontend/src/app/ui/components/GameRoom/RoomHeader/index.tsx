@@ -22,15 +22,29 @@ const RoomHeader = ({ localGameState, currentNickname }: RoomHeaderProps) => {
               >
                 Theme: {localGameState.theme}
               </Typography>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "baseline" }}>
+              <Typography variant='body2'>Game Room:</Typography>
+              <Chip
+                label={localGameState.gameCode}
+                color='primary'
+                size='small'
+              />
+              {localGameState.status === GameStatus.IN_PROGRESS && (
+                <Chip
+                  label={`Round ${localGameState.currentRound} / ${localGameState.maxRounds}`}
+                  color='info'
+                  size='small'
+                />
+              )}
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "baseline" }}>
+              <Typography variant='body2'>Status:</Typography>
               <Chip
                 label={getStatusLabel(localGameState.status)}
                 color={getStatusColor(localGameState.status)}
                 size='small'
               />
-            </Box>
-            <Box sx={{ display: "flex", alignItems: "baseline" }}>
-              <Typography variant='body2'>Game Room:</Typography>
-              <Chip label={localGameState.gameCode} color='primary' />
             </Box>
             <Box>
               <Typography variant='caption' color='text.secondary'>
@@ -40,22 +54,6 @@ const RoomHeader = ({ localGameState, currentNickname }: RoomHeaderProps) => {
                 <Chip label='Host' color='primary' size='small' />
               )}
             </Box>
-          </Grid>
-
-          <Grid sx={{ textAlign: { xs: "left", md: "right" }, xs: 12, md: 6 }}>
-            <Stack
-              direction='row'
-              spacing={1}
-              justifyContent={{ xs: "flex-start", md: "flex-end" }}
-            >
-              {localGameState.status === GameStatus.IN_PROGRESS && (
-                <Chip
-                  label={`Round ${localGameState.currentRound} / ${localGameState.maxRounds}`}
-                  color='info'
-                  size='small'
-                />
-              )}
-            </Stack>
           </Grid>
         </Grid>
       </Paper>
