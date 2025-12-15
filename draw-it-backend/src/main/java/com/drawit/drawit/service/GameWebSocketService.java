@@ -29,47 +29,6 @@ public class GameWebSocketService {
     private GuestPlayerRepository guestPlayerRepository;
 
     /**
-     * Broadcast player joined
-     * Topic: /topic/game/{gameCode}/players
-     */
-    public void broadcastPlayerJoined(String gameCode, PlayerDto player) {
-        PlayerUpdateMessageDto message = PlayerUpdateMessageDto.builder()
-                .type("PLAYER_JOINED")
-                .nickname(player.getNickname())
-                .sessionId(player.getPlayerSessionId())
-                .score(player.getScore())
-                .build();
-
-        messagingTemplate.convertAndSend(
-                "/topic/game/" + gameCode + "/players",
-                message
-        );
-
-        log.info("Broadcast player joined: {} in game {}", player.getNickname(), gameCode);
-    }
-
-    /**
-     * Broadcast full player list
-     * Topic: /topic/game/{gameCode}/players
-     */
-    public void broadcastPlayerList(String gameCode) {
-        GameStateRedisModel redisState = getGameStateFromRedis("game::" + gameCode);
-
-        if (redisState != null) {
-            PlayerListUpdateDto message = PlayerListUpdateDto.builder()
-                    .players(redisState.getPlayers())
-                    .build();
-
-            messagingTemplate.convertAndSend(
-                    "/topic/game/" + gameCode + "/players",
-                    message
-            );
-
-            log.info("Broadcast player list for game {}", gameCode);
-        }
-    }
-
-    /**
      * Kick player
      * Topic: /topic/game/{gameCode}/players (all) + /user/queue/kick (kicked player)
      */
@@ -118,6 +77,50 @@ public class GameWebSocketService {
 
         log.info("Player {} kicked from game {} by host", target.getNickname(), gameCode);
     }
+
+    /**
+     * Broadcast full player list
+     * Topic: /topic/game/{gameCode}/players
+     */
+    public void broadcastPlayerList(String gameCode) {
+        GameStateRedisModel redisState = getGameStateFromRedis("game::" + gameCode);
+
+        if (redisState != null) {
+            PlayerListUpdateDto message = PlayerListUpdateDto.builder()
+                    .players(redisState.getPlayers())
+                    .build();
+
+            messagingTemplate.convertAndSend(
+                    "/topic/game/" + gameCode + "/players",
+                    message
+            );
+
+            log.info("Broadcast player list for game {}", gameCode);
+        }
+    }
+    /**
+     * Broadcast player joined
+     * Topic: /topic/game/{gameCode}/players
+     */
+    public void broadcastPlayerJoined(String gameCode, PlayerDto player) {
+        PlayerUpdateMessageDto message = PlayerUpdateMessageDto.builder()
+                .type("PLAYER_JOINED")
+                .nickname(player.getNickname())
+                .sessionId(player.getPlayerSessionId())
+                .score(player.getScore())
+                .build();
+
+        messagingTemplate.convertAndSend(
+                "/topic/game/" + gameCode + "/players",
+                message
+        );
+
+        log.info("Broadcast player joined: {} in game {}", player.getNickname(), gameCode);
+    }
+
+
+
+
 
     /**
      * Broadcast drawing submitted

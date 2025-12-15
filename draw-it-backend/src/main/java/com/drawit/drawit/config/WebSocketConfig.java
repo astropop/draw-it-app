@@ -18,15 +18,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         // Application destination prefix
         config.setApplicationDestinationPrefixes("/app");
-
-        // User destination prefix
-        config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
+                .setAllowedOriginPatterns("*");
     }
 }
