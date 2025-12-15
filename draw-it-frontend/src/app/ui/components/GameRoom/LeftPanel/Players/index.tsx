@@ -34,21 +34,22 @@ const Players = ({ props }: { props: PlayerProps }) => {
         {props.localGameState.players.map((player) => (
           <ListItem
             key={player.playerSessionId}
-            secondaryAction={
-              props.isHost &&
-              !player.isHost &&
-              props.currentPlayerSessionId !== player.playerSessionId &&
-              props.localGameState.status === GameStatus.WAITING && (
-                <IconButton
-                  edge='end'
-                  onClick={() => props.handleKick(player.playerSessionId)}
-                  color='error'
-                  size='small'
-                >
-                  <DeleteIcon fontSize='small' />
-                </IconButton>
-              )
-            }
+            // TODO comment out kick player feature
+            // secondaryAction={
+            //   props.isHost &&
+            //   !player.isHost &&
+            //   props.currentPlayerSessionId !== player.playerSessionId &&
+            //   props.localGameState.status === GameStatus.WAITING && (
+            //     <IconButton
+            //       edge='end'
+            //       onClick={() => props.handleKick(player.playerSessionId)}
+            //       color='error'
+            //       size='small'
+            //     >
+            //       <DeleteIcon fontSize='small' />
+            //     </IconButton>
+            //   )
+            // }
           >
             <ListItemText
               primary={
