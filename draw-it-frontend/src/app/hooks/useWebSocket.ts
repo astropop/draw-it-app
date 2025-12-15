@@ -1,91 +1,39 @@
-// app/hooks/useWebSocket.ts
 "use client";
 
 import { Client, IMessage } from "@stomp/stompjs";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { KickPlayerResponseDto } from "../lib/websocket/websocket.type";
 
-import {
-  DrawingSubmittedMessage,
-  GameStateMessage,
-  GuessSubmittedMessage,
-  KickPlayerResponse,
-  PlayerDto,
-  PlayerListUpdate,
-  PlayerUpdateMessage,
-} from "../lib/game.type";
+export function useWebSocket(
+  gameCode?: string | null,
+  currentPlayerSessionId?: string | null
+) {
+  /*
+   * constants
+   */
 
-// export interface WebSocketMessage {
-//   type: string;
-//   data: any;
-// }
-
-export function useWebSocket(gameCode: string | null) {
+  /*
+   * State management
+   */
   const [connected, setConnected] = useState(false);
-  const [players, setPlayers] = useState<PlayerDto[]>([]);
-  const [gameState, setGameState] = useState<GameStateMessage | null>(null);
-  const [currentDrawing, setCurrentDrawing] = useState<string | null>(null);
-  const [guesses, setGuesses] = useState<GuessSubmittedMessage[]>([]);
+
   const clientRef = useRef<Client | null>(null);
+
+  /*
+   * Hooks area
+   */
 
   useEffect(() => {
     if (!gameCode) return;
 
     const socketURL = process.env.NEXT_PUBLIC_WS_URL;
 
-    const handlePlayerUpdate = (
-      data: PlayerUpdateMessage | PlayerListUpdate
-    ) => {
-      if ("players" in data) {
-        // PlayerListUpdate
-        setPlayers(data.players);
-      } else if (data.type === "PLAYER_JOINED") {
-        // PlayerUpdateMessage
-        // setPlayers((prev) => [
-        //   ...prev,
-        //   {
-        //     nickname: data.nickname,
-        //     sessionId: data.sessionId,
-        //     score: data.score || 0,
-        //     isHost: false,
-        //   },
-        // ]);
+    const handleKicked = (data: KickPlayerResponseDto) => {
+      if (data.targetPlayerSessionId === currentPlayerSessionId) {
+        alert(`You have been kicked from the game. Reason: ${data.reason}`);
+        // Optionally, redirect the user or perform other actions
+        window.location.href = "/"; // redirect to home or another page
       }
-    };
-
-    const handleDrawingUpdate = (data: DrawingSubmittedMessage) => {
-      setCurrentDrawing(data.drawingData);
-      if (data.containsKeyword) {
-        alert(`WARNING: ${data.drawer}'s drawing contains keyword text!`);
-      }
-    };
-
-    const handleGuessUpdate = (data: GuessSubmittedMessage) => {
-      setGuesses((prev) => [...prev, data]);
-
-      // Update player score
-      setPlayers((prev) =>
-        prev.map((p) =>
-          p.nickname === data.playerNickname
-            ? { ...p, score: p.score + (data.pointsEarned || 0) }
-            : p
-        )
-      );
-    };
-
-    const handleGameStateChange = (data: GameStateMessage) => {
-      setGameState(data);
-
-      if (data.type === "NEXT_ROUND") {
-        setCurrentDrawing(null);
-        setGuesses([]);
-      } else if (data.type === "GAME_FINISHED") {
-        alert(" Game finished!");
-      }
-    };
-
-    const handleKicked = (data: KickPlayerResponse) => {
-      alert(`You have been kicked: ${data.reason}`);
-      window.location.href = "/";
     };
 
     const stompClient = new Client({
@@ -94,47 +42,9 @@ export function useWebSocket(gameCode: string | null) {
         console.log("WebSocket connected");
         setConnected(true);
 
-        // Subscribe to player updates
-        stompClient.subscribe(
-          `/topic/game/${gameCode}/players`,
-          (message: IMessage) => {
-            const data: PlayerUpdateMessage | PlayerListUpdate = JSON.parse(
-              message.body
-            );
-            handlePlayerUpdate(data);
-          }
-        );
-
-        // Subscribe to drawing updates
-        stompClient.subscribe(
-          `/topic/game/${gameCode}/drawing`,
-          (message: IMessage) => {
-            const data: DrawingSubmittedMessage = JSON.parse(message.body);
-            handleDrawingUpdate(data);
-          }
-        );
-
-        // Subscribe to guess updates
-        stompClient.subscribe(
-          `/topic/game/${gameCode}/guess`,
-          (message: IMessage) => {
-            const data: GuessSubmittedMessage = JSON.parse(message.body);
-            handleGuessUpdate(data);
-          }
-        );
-
-        // Subscribe to game state changes
-        stompClient.subscribe(
-          `/topic/game/${gameCode}/state`,
-          (message: IMessage) => {
-            const data: GameStateMessage = JSON.parse(message.body);
-            handleGameStateChange(data);
-          }
-        );
-
         // Subscribe to personal kick notifications
-        stompClient.subscribe(`/user/queue/kick`, (message: IMessage) => {
-          const data: KickPlayerResponse = JSON.parse(message.body);
+        stompClient.subscribe(`/queue/kick`, (message: IMessage) => {
+          const data: KickPlayerResponseDto = JSON.parse(message.body);
           handleKicked(data);
         });
       },
@@ -155,24 +65,42 @@ export function useWebSocket(gameCode: string | null) {
     };
   }, [gameCode]);
 
-  const kickPlayer = useCallback(
-    (targetSessionId: string) => {
-      if (clientRef.current?.connected) {
+  /*
+   * functions
+   */
+  const onKickPlayer = (targetPlayerSessionId: string) => {
+    if (clientRef.current?.connected && currentPlayerSessionId) {
+      clientRef.current.publish({
+        destination: `/app/game/${gameCode}/kick`,
+        headers: {
+          "x-player-session-id": currentPlayerSessionId, // player pressed the kick
+        },
+        body: JSON.stringify({ targetPlayerSessionId }),
+      });
+    }
+  };
+
+  const onDrawingSubmitted = useCallback(
+    (roundNumber: number, turnNumber: number) => {
+      if (clientRef.current?.connected && currentPlayerSessionId) {
         clientRef.current.publish({
-          destination: `/app/game/${gameCode}/kick`,
-          body: JSON.stringify({ targetSessionId }),
+          destination: `/app/game/${gameCode}/drawing-submitted`,
+          headers: {
+            "x-player-session-id": currentPlayerSessionId, // player pressed the kick
+          },
+          body: JSON.stringify({ roundNumber, turnNumber }),
         });
       }
     },
     [gameCode]
   );
 
-  const sendDrawing = useCallback(
-    (drawingData: string) => {
-      if (clientRef.current?.connected) {
+  const onGuessSubmitted = useCallback(
+    (roundNumber: number, turnNumber: number) => {
+      if (clientRef.current?.connected && currentPlayerSessionId) {
         clientRef.current.publish({
-          destination: `/app/game/${gameCode}/drawing-submitted`,
-          body: JSON.stringify({ drawingData }),
+          destination: `/app/game/${gameCode}/guess-submitted`,
+          body: JSON.stringify({ roundNumber, turnNumber }),
         });
       }
     },
@@ -181,11 +109,8 @@ export function useWebSocket(gameCode: string | null) {
 
   return {
     connected,
-    players,
-    gameState,
-    currentDrawing,
-    guesses,
-    kickPlayer,
-    sendDrawing,
+    onKickPlayer,
+    onDrawingSubmitted,
+    onGuessSubmitted,
   };
 }
