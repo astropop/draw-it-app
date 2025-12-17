@@ -1,28 +1,18 @@
 // app/lobby/page.tsx
 
-import { mockGamesLobby } from "../mock/mockdata.unified";
+import { getGameList } from "../lib/api/GetGameList/fetcher";
 import GameLobby from "../ui/components/GameLobby";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 async function getGames() {
-  if (USE_MOCK) {
-    return mockGamesLobby;
-  }
-  // return arrLocal;
+  const response = await getGameList();
 
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/games/list`,
-    {
-      cache: "no-store",
-    }
-  );
-
-  if (!response.ok) {
+  if (!response) {
     return [];
   }
 
-  return await response.json();
+  return response;
 }
 
 export default async function LobbyPage() {

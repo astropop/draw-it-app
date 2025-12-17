@@ -51,10 +51,11 @@ public class Game {
     @Column(nullable = false)
     private Integer guessingTime;
 
-
-
     @Column
     private Long hostId;
+
+    @Column
+    private String hostPlayerSessionId;
 
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GuestPlayer> players = new ArrayList<>();

@@ -2,10 +2,6 @@ package com.drawit.drawit.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.util.Base64;
 
 @Service
@@ -17,7 +13,7 @@ public class OCRService {
      * For production: use Tesseract OCR or Google Vision API or AI
      * For now: simple heuristic check
      */
-    public boolean containsKeywordText(String base64Image, String keyword) {
+    public String containingKeywordText(String base64Image, String keyword) {
         try {
             // Remove data:image/png;base64, prefix if exists
             String imageData = base64Image.replaceFirst("^data:image/[^;]+;base64,", "");
@@ -25,9 +21,11 @@ public class OCRService {
             // Decode base64
             byte[] imageBytes = Base64.getDecoder().decode(imageData);
 
+            log.info("OCR check for keyword '{}' - Image size: {} bytes", keyword, imageBytes.length);
+
             // Simple check: if image is too small, likely no text
             if (imageBytes.length < 1000) {
-                return false;
+                return null;
             }
 
             // TODO: AI or Google OCR later
@@ -37,22 +35,22 @@ public class OCRService {
             // 2. Run OCR
             // 3. Check if detected text contains keyword letters
 
-            log.info("OCR check for keyword '{}' - Image size: {} bytes", keyword, imageBytes.length);
 
-            return false; // Placeholder
+
+            return keyword; // Placeholder
 
         } catch (Exception e) {
             log.error("OCR check failed", e);
-            return false;
+            return null;
         }
     }
 
     /**
      * Calculate penalty points based on text detection
      */
-    public int calculatePenalty(boolean containsKeyword) {
-        if (containsKeyword) {
-            return 20; // Deduct 20 points
+    public int calculatePenalty(String containingKeyword) {
+        if (containingKeyword != null) {
+            return 0; // TODO no reduce point
         }
         return 0;
     }

@@ -1,7 +1,10 @@
 // app/lib/validations.ts
 import { z } from "zod";
-import { GameMode } from "../types/game.type";
+import { GameMode } from "./game.type";
 
+/**
+ * CREATE GAME VALIDATIONS
+ */
 // Validation schema Creating game
 export const createGameSchema = z.object({
   hostNickname: z
@@ -12,23 +15,24 @@ export const createGameSchema = z.object({
     .string()
     .min(1, "Theme is required")
     .max(100, "Theme must be from 1 - 100 characters"),
-  // language: z.enum(["English", "Vietnamese", "Spanish", "French", "Japanese"]),
   maxRounds: z.number().min(1).max(5),
   drawingTime: z.number().min(30).max(300),
   guessingTime: z.number().min(30).max(180),
   gameMode: z.enum(GameMode),
-  // turnMode: z.enum(TurnMode).optional(), TODO update in next sprint
 });
 
 export type CreateGameInput = z.infer<typeof createGameSchema>;
 
+/**
+ * JOIN GAME VALIDATIONS
+ */
 // Validation schema joining game
 export const joinGameSchema = z.object({
   gameCode: z
     .string()
     .min(8, "Game code must be 8 characters")
     .max(8, "Game code must be 8 characters")
-    .regex(/^[A-Z0-9]+$/, "Game code must contain only letters and numbers"),
+    .regex(/^[A-Za-z0-9]+$/, "Game code must contain only letters and numbers"),
   nickname: z
     .string()
     .min(1, "Nickname is required")
@@ -51,3 +55,28 @@ export const joinGamePrefilledSchema = z.object({
 });
 
 export type JoinGamePrefilledInput = z.infer<typeof joinGamePrefilledSchema>;
+
+/**
+ * SUBMIT GUESS VALIDATIONS
+ */
+
+// Validation schema joining game
+export const submitGuessSchema = z.object({
+  guess: z.string().optional(),
+});
+
+export type SubmitGuessInput = z.infer<typeof submitGuessSchema>;
+
+/**
+ * PAGINATION & FILTERING VALIDATIONS
+ */
+
+export const sortTypeSchema = z.enum(["asc", "desc"]);
+export type SortType = z.infer<typeof sortTypeSchema>;
+
+export const gameListQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  sort: sortTypeSchema.default("desc"),
+});
+
+export type GameListQueryInput = z.infer<typeof gameListQuerySchema>;

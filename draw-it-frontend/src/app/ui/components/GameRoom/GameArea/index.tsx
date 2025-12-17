@@ -1,4 +1,4 @@
-import { GameStatus } from "@/app/types/game.type";
+import { GameStatus } from "@/app/lib/game.type";
 import { Card, CardContent } from "@mui/material";
 import GameAreaInProgress, {
   GameAreaInProgressProps,

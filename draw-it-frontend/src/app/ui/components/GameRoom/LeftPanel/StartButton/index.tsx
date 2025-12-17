@@ -1,9 +1,10 @@
-import { PlayerDTO } from "@/app/types/game.type";
+import { GameResponseDto } from "@/app/lib/game.type";
 import { Divider, Button, Typography } from "@mui/material";
 
 export type StartButtonProps = {
-  handleStartGame: () => Promise<void>;
-  currentPlayers: PlayerDTO[];
+  currentPlayerSessionId: string;
+  handleStartGame: (currentPlayerSessionId: string) => Promise<void>;
+  localGameState: GameResponseDto;
 };
 
 const StartButton = ({ props }: { props: StartButtonProps }) => {
@@ -13,13 +14,13 @@ const StartButton = ({ props }: { props: StartButtonProps }) => {
       <Button
         variant='contained'
         fullWidth
-        onClick={props.handleStartGame}
-        disabled={props.currentPlayers.length < 2}
+        onClick={() => props.handleStartGame(props.currentPlayerSessionId)}
+        disabled={props.localGameState.players.length < 2}
         size='large'
       >
         Start Game
       </Button>
-      {props.currentPlayers.length < 2 && (
+      {props.localGameState.players.length < 2 && (
         <Typography
           variant='caption'
           color='error'

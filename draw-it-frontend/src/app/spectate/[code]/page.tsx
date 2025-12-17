@@ -1,29 +1,46 @@
 // Spectate
 
-import { gameApi } from "@/app/lib/api";
-import { getMockGameByCode } from "@/app/mock/mockdata.unified";
+import { spectateGame } from "@/app/lib/api/SpectateGame/fetcher";
 import GameSpectator from "@/app/ui/components/GameSpectator";
-import { notFound } from "next/navigation";
+import { Metadata } from "next";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
-async function getGameData(code: string) {
-  const response = await gameApi.spectateGame(code);
+type SpectatePageProps = { params: Promise<{ code: string }> };
 
-  if (!response) {
-    notFound();
+const getGameData = cache(async (code: string) => {
+  const response = await spectateGame(code);
+
+  if (!response || !response.gameCode) {
+    redirect(`/`);
   }
 
   return response;
-}
+});
 
-export default async function SpectatePage({
-  params,
-}: {
-  params: { code: string };
-}) {
-  const { code } = await params;
+export default async function SpectatePage({ params }: SpectatePageProps) {
+  const code = (await params).code;
   const gameData = await getGameData(code);
 
-  return <GameSpectator initialData={gameData} />;
+  return (
+    <>
+      <GameSpectator initialData={gameData} />
+    </>
+  );
+}
+
+export async function generateMetadata({
+  params,
+}: SpectatePageProps): Promise<Metadata> {
+  const code = (await params).code;
+
+  // fetch post information
+  const gameData = await getGameData(code);
+
+  return {
+    title: `Draw-it - Spectate Room - (Theme: ${gameData.theme})`,
+  };
 }
