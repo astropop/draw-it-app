@@ -3,7 +3,7 @@ export interface SubmitDrawingRequestDto {
   turnNumber: number;
   drawingData: string;
   selectedWord: string;
-  drawingTime: number;
+  drawingTimeLeft: number;
   playerSessionId: string;
 }
 

@@ -5,16 +5,16 @@ import { Box, Container, Paper, Typography } from "@mui/material";
 
 const HomePage = () => {
   return (
-    <Container sx={{ pt: 6 }}>
-      <Paper elevation={3} sx={{ p: 6, textAlign: "center" }}>
-        <Typography variant='h3' component='h1' gutterBottom>
+    <Container sx={{ pt: 1 }}>
+      <Paper elevation={3} sx={{ p: 3, textAlign: "center" }}>
+        <Typography variant='h4' component='h1' gutterBottom>
           Draw-it
         </Typography>
-        <Typography variant='body1' color='text.secondary' component='p'>
+        <Typography variant='body2' color='text.secondary' component='p'>
           Draw, guess, and have fun!
         </Typography>
 
-        <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: "divider" }}>
+        <Box sx={{ mt: 2, pt: 1, borderTop: 1, borderColor: "divider" }}>
           <Typography variant='caption' color='text.secondary'>
             No account needed • Play instantly • Powered by AI
           </Typography>

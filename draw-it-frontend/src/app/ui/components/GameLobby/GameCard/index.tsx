@@ -37,7 +37,7 @@ const GameCard = ({ game, getStatusLabel, getStatusColor }: GameCardProps) => {
               mb: 2,
             }}
           >
-            <Typography variant='h6'>Theme: {game.theme}</Typography>
+            <Typography variant='subtitle2'>Theme: {game.theme}</Typography>
             <Chip
               label={getStatusLabel(game.status)}
               color={getStatusColor(game.status)}
@@ -78,11 +78,19 @@ const GameCard = ({ game, getStatusLabel, getStatusColor }: GameCardProps) => {
             />
           )}
 
-          {game.status === GameStatus.WAITING && (
+          {game.status === GameStatus.WAITING && game.playerCount < 2 && (
             <ButtonGameCard
               url={`/join`}
               props={{ variant: "contained" }}
               textBtn={"Join"}
+            />
+          )}
+
+          {game.status === GameStatus.WAITING && game.playerCount > 1 && (
+            <ButtonGameCard
+              url={`/spectate/${game.gameCode}`}
+              props={{ variant: "outlined" }}
+              textBtn={"Spectator"}
             />
           )}
         </CardContent>

@@ -1,7 +1,7 @@
 "use client";
 
 import { GameResponseDto, GameStatus } from "@/app/lib/game.type";
-import { Card, CardContent, Container, Grid } from "@mui/material";
+import { Card, CardContent, Container, Grid, Stack } from "@mui/material";
 import { useEffect, useState } from "react";
 import GameAreaInProgress from "./GameArea/GameAreaInProgress";
 import GameAreaWaiting from "./GameArea/GameAreaWaiting";
@@ -11,6 +11,7 @@ import Instructions from "./RightPanel/Instructions";
 import RoomHeader from "./RoomHeader";
 import { getGame } from "@/app/lib/api/GetGame/fetcher";
 import { startGame } from "@/app/lib/api/StartGame/fetcher";
+import { useRouter } from "next/navigation";
 
 type GameRoomProps = {
   gameData: GameResponseDto;
@@ -25,6 +26,7 @@ export default function GameRoom({ gameData }: GameRoomProps) {
    * constants area
    */
   const isHost = gameData.isHost;
+  const route = useRouter();
   /*
    * State management
    */
@@ -82,6 +84,13 @@ export default function GameRoom({ gameData }: GameRoomProps) {
     setCurrentNickname(nickname);
   }, []);
 
+  // redirect page after game is finished
+  useEffect(() => {
+    if (localGameState.status === GameStatus.FINISHED) {
+      route.push(`/spectate/${localGameState.gameCode}`);
+    }
+  }, [localGameState]);
+
   // Auto-refresh game state when in progress (every 3 seconds)
   // useEffect(() => {
   //   if (localGameState.status !== GameStatus.IN_PROGRESS) return;
@@ -103,7 +112,7 @@ export default function GameRoom({ gameData }: GameRoomProps) {
       />
 
       {/* Main Content */}
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         {/* Left Panel - Players */}
         <Grid sx={{ xs: 12, md: 2 }}>
           <Card>
@@ -131,28 +140,32 @@ export default function GameRoom({ gameData }: GameRoomProps) {
             </CardContent>
           </Card>
           <Instructions />
-          <br></br>
-          Timer
         </Grid>
 
         {/* Middle Panel - Game Area */}
-        <Grid sx={{ xs: 12, md: 10 }}>
-          {localGameState.status === GameStatus.WAITING && (
-            <GameAreaWaiting props={{ localGameState, isHost }} />
-          )}
+        <Grid sx={{ xs: 12, md: 10 }} size='grow'>
+          <Stack spacing={2} sx={{ height: "100%" }}>
+            <Card sx={{ height: "100%" }}>
+              <CardContent>
+                {localGameState.status === GameStatus.WAITING && (
+                  <GameAreaWaiting props={{ localGameState, isHost }} />
+                )}
 
-          {localGameState.status === GameStatus.IN_PROGRESS && (
-            <GameAreaInProgress
-              props={{
-                localGameState,
-                action: localGameState.action,
-                setLocalGameState,
-                currentPlayerSessionId,
-                onSubmitDrawing: refreshGameState,
-                onSubmitGuess: refreshGameState,
-              }}
-            />
-          )}
+                {localGameState.status === GameStatus.IN_PROGRESS && (
+                  <GameAreaInProgress
+                    props={{
+                      localGameState,
+                      action: localGameState.action,
+                      setLocalGameState,
+                      currentPlayerSessionId,
+                      onSubmitDrawingCallback: refreshGameState,
+                      onSubmitGuessCallback: refreshGameState,
+                    }}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </Stack>
         </Grid>
       </Grid>
     </Container>

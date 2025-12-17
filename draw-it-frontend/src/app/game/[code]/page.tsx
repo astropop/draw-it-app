@@ -13,7 +13,7 @@ type GamePageProps = { params: Promise<{ code: string }> };
 const getGameData = cache(async (code: string) => {
   const response = await getGame(code);
 
-  if (!response) {
+  if (!response || !response.gameCode) {
     redirect(`/`);
   }
 

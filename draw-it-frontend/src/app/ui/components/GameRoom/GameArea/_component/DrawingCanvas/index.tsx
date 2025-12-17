@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 interface DrawingCanvasProps {
   handleSubmitDrawing?: (imageData: string) => Promise<void>;
   onDrawingUpdate?: (imageData: string) => void;
+  isSubmittingToServer: boolean;
 }
 
 interface Coordinates {
@@ -27,6 +28,7 @@ type ToolType = "pen" | "eraser";
 export default function DrawingCanvas({
   handleSubmitDrawing,
   onDrawingUpdate,
+  isSubmittingToServer,
 }: DrawingCanvasProps) {
   /*
    * constants
@@ -148,7 +150,6 @@ export default function DrawingCanvas({
     if (!canvas) return;
 
     const imageData = canvas.toDataURL("image/png");
-    console.log("drawing data", imageData);
 
     // Call submit if handler exists
     if (handleSubmitDrawing) {
@@ -156,12 +157,11 @@ export default function DrawingCanvas({
     }
   };
 
-  /*
-   * Hooks area
-   */
   const initializeCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
@@ -169,34 +169,23 @@ export default function DrawingCanvas({
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
 
-    const ctx = canvas.getContext("2d");
     if (ctx) {
+      //Our first draw
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
       ctx.scale(dpr, dpr);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       setContext(ctx);
-
-      // Restore previous drawing if exists
-      if (canvasImageRef.current) {
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0);
-        };
-        img.src = canvasImageRef.current;
-      }
     }
   };
+  /*
+   * Hooks area
+   */
 
   useEffect(() => {
     initializeCanvas();
-
-    // Lắng nghe sự kiện resize
-    const handleResize = () => {
-      initializeCanvas();
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
@@ -358,7 +347,11 @@ export default function DrawingCanvas({
           Clear
         </Button>
         {handleSubmitDrawing && (
-          <Button variant='contained' onClick={handleSubmit}>
+          <Button
+            variant='contained'
+            onClick={handleSubmit}
+            disabled={isSubmittingToServer}
+          >
             Submit Drawing
           </Button>
         )}

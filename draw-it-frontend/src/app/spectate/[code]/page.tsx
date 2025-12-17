@@ -4,7 +4,7 @@ import { spectateGame } from "@/app/lib/api/SpectateGame/fetcher";
 import GameSpectator from "@/app/ui/components/GameSpectator";
 import { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
@@ -14,8 +14,8 @@ type SpectatePageProps = { params: Promise<{ code: string }> };
 const getGameData = cache(async (code: string) => {
   const response = await spectateGame(code);
 
-  if (!response) {
-    notFound();
+  if (!response || !response.gameCode) {
+    redirect(`/`);
   }
 
   return response;
@@ -27,7 +27,6 @@ export default async function SpectatePage({ params }: SpectatePageProps) {
 
   return (
     <>
-      <Link href={"/"}>Back to Home</Link>
       <GameSpectator initialData={gameData} />
     </>
   );

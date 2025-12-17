@@ -167,14 +167,8 @@ export default function JoinGameForm() {
           >
             Create New Game
           </Button>
-          <Button
-            variant='outlined'
-            fullWidth
-            component={Link}
-            href='/'
-            target='_blank'
-          >
-            Browse Games
+          <Button variant='outlined' fullWidth component={Link} href='/'>
+            Back to Home
           </Button>
         </Stack>
       </Stack>

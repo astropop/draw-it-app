@@ -244,7 +244,7 @@ export default function CreateGameForm() {
         </Button>
 
         <Button variant='outlined' fullWidth onClick={() => router.push("/")}>
-          Back to Lobby
+          Back to Home
         </Button>
       </Stack>
     </Box>
