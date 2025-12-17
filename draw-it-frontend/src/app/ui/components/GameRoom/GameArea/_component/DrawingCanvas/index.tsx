@@ -150,7 +150,6 @@ export default function DrawingCanvas({
     if (!canvas) return;
 
     const imageData = canvas.toDataURL("image/png");
-    console.log("drawing data", imageData);
 
     // Call submit if handler exists
     if (handleSubmitDrawing) {

@@ -7,7 +7,6 @@ export const submitGuess = async (
   gameCode: string,
   data: SubmitGuessRequestDto
 ): Promise<SubmitGuessResponseDto> => {
-  console.log("submitGuess", data);
   const cookiesStore = await cookies();
   const playerSessionId = cookiesStore.get("playerSessionId")?.value;
 

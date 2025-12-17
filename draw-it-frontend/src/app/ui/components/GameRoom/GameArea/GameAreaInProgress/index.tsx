@@ -53,12 +53,9 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
       drawingTimeLeft: timeLeft || 0,
     } as SubmitDrawingRequestDto;
 
-    console.log("handleSubmitDrawing", submitData);
-
     const response = await submitDrawing(gameCode, submitData);
 
     if (!response) {
-      console.log("Error Submit Drawing");
       setIsSubmittingToServer(false);
       return;
     }
@@ -69,7 +66,6 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
     setTimeLeft(0);
     setIsSubmittingToServer(false);
     // Call parent callback to refresh game state
-    console.log("ok drawing", response.success);
     await props.onSubmitDrawingCallback();
   };
 
@@ -101,12 +97,10 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
       guess: data.guess,
       guessingTimeLeft: timeLeft || 0,
     } as SubmitGuessRequestDto;
-    console.log("handleSubmitGuess", submitData);
 
     const response = await submitGuess(gameCode, submitData);
 
     if (!response && timeLeft > 0) {
-      console.log("Error Submit Guess");
       setIsSubmittingToServer(false);
       return;
     }
@@ -125,7 +119,6 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
     setIsSubmittingToServer(false);
 
     // Call parent callback to refresh game state
-    console.log("ok guess", response.isCorrect);
     await props.onSubmitGuessCallback();
   };
 

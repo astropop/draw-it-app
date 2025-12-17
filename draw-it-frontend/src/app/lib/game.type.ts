@@ -1,5 +1,3 @@
-// app/types/game.types.ts
-
 // Enums
 export enum GameStatus {
   WAITING = "WAITING",

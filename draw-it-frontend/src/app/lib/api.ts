@@ -7,8 +7,6 @@ export async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  console.log("API_URL", API_URL, endpoint);
-
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...options.headers,
@@ -21,10 +19,7 @@ export async function fetchApi<T>(
   });
 
   if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({ message: response.statusText }));
-    throw new Error(errorData.message || `API Error: ${response.statusText}`);
+    return {} as unknown as T;
   }
 
   return await response.json();
