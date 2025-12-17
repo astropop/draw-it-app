@@ -10,6 +10,6 @@ public class SubmitDrawingRequestDto {
     private Integer turnNumber;
     private String drawingData; // base64 image
     private String selectedWord;
-    private Integer drawingTime; // time for drawing
+    private Integer drawingTimeLeft; // time for drawing
     private String playerSessionId;
 }

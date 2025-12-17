@@ -7,6 +7,7 @@ import com.drawit.drawit.dto.WordStatusDto;
 import com.drawit.drawit.dto.creategame.CreateGameRequestDto;
 import com.drawit.drawit.dto.getgame.GetGameRequestDto;
 import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
+import com.drawit.drawit.dto.getgamelist.GameListResponseDto;
 import com.drawit.drawit.dto.joingame.JoinGameRequestDto;
 import com.drawit.drawit.dto.spectategame.GuessDto;
 import com.drawit.drawit.dto.spectategame.SpectateGameResponseDto;
@@ -16,19 +17,18 @@ import com.drawit.drawit.dto.submitdrawing.SubmitDrawingRequestDto;
 import com.drawit.drawit.dto.submitdrawing.SubmitDrawingResponseDto;
 import com.drawit.drawit.dto.submitguess.SubmitGuessRequestDto;
 import com.drawit.drawit.dto.submitguess.SubmitGuessResponseDto;
-import com.drawit.drawit.entity.Game;
-import com.drawit.drawit.entity.GuestPlayer;
-import com.drawit.drawit.entity.RoundHistory;
+import com.drawit.drawit.entity.*;
 import com.drawit.drawit.enums.GameStatus;
 import com.drawit.drawit.model.GameStateRedisModel;
-import com.drawit.drawit.repository.GameRepository;
-import com.drawit.drawit.repository.GuestPlayerRepository;
-import com.drawit.drawit.repository.RoundHistoryRepository;
-import com.drawit.drawit.repository.WordCacheRepository;
+import com.drawit.drawit.repository.*;
 import com.drawit.drawit.util.GameCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,19 +57,25 @@ public class GameService {
     @Autowired
     private OCRService ocrService;
     @Autowired
-    private GameWebSocketService webSocketService;
-    @Autowired
     private RoundHistoryRepository roundHistoryRepository;
+    @Autowired
+    private RoundHistoryGuessRepository roundHistoryGuessRepository;
+    @Autowired
+    private GameWordRepository gameWordRepository;
 
     /**
      * GET GAME LIST including active players
      *
      * @return list game
      */
-    public List<GameListItemResponseDto> getGameList() {
-        List<Game> games = gameRepository.findAll();
+    public GameListResponseDto getGameList(int page, int pageSize, String sort) {
+        Sort sortBy = sort.equals("desc") ? Sort.by("createdAt").descending() : Sort.by("createdAt").ascending();
+        Pageable pageable = PageRequest.of(page - 1, pageSize, sortBy);
+        Page<Game> pageList = gameRepository.findAll(pageable);
 
-        return games.stream().map(game -> {
+        Long totalGame = gameRepository.count();
+
+        List<GameListItemResponseDto> gameList = pageList.stream().map(game -> {
             int playerCount = guestPlayerRepository.countByGameAndIsActiveTrue(game).intValue();
 
             return GameListItemResponseDto.builder()
@@ -81,7 +87,9 @@ public class GameService {
                     .startedAt(game.getStartedAt())
                     .finishedAt(game.getFinishedAt())
                     .build();
-        }).collect(Collectors.toList());
+        }).toList();
+
+        return GameListResponseDto.builder().totalGame(totalGame).gameItemList(gameList).build();
     }
 
     /**
@@ -110,6 +118,7 @@ public class GameService {
         game.setMaxRounds(request.getMaxRounds());
         game.setDrawingTime(request.getDrawingTime());
         game.setGuessingTime(request.getGuessingTime());
+        game.setCreatedAt(LocalDateTime.now());
 
         // Save game first to get ID
         game = gameRepository.save(game);
@@ -132,6 +141,19 @@ public class GameService {
         // Generate words using HuggingFace (or default) quantity: max count x 2 + 2
         int wordCount = Math.max(request.getMaxRounds() * 2 + 2, 7);
         List<String> rawWords = huggingFaceService.getOrCreateKeywords(request.getTheme(), wordCount);
+
+        // save list word generated into db
+
+        Game finalGame = game;
+        List<GameWord> gameWordList = rawWords.stream().map(s -> {
+            GameWord gameWord = new GameWord();
+            gameWord.setGame(finalGame);
+            gameWord.setWord(s);
+
+            return gameWord;
+        }).toList();
+        gameWordRepository.saveAll(gameWordList);
+
         // convert to WordStatusDto
         List<WordStatusDto> words = rawWords.stream()
                 .map(w -> new WordStatusDto(w, 0, 0,
@@ -227,7 +249,6 @@ public class GameService {
             // 5. Update Redis state
 
 
-            // TODO reconstruct, no saving word into db
             if (redisState == null) {
                 // Reconstruct from DB if missing
                 redisState = reconstructRedisState(game);
@@ -243,7 +264,6 @@ public class GameService {
         } else {
             player = checkPlayer.get();
 
-            // TODO reconstruct, no saving word into db
             if (redisState == null) {
                 // Reconstruct from DB if missing
                 redisState = reconstructRedisState(game);
@@ -258,8 +278,6 @@ public class GameService {
                 .map(WordStatusDto::getWord)
                 .collect(Collectors.toList());
 
-        // TODO Broadcast player joined via WebSocket
-//        webSocketService.broadcastPlayerJoined(request.getGameCode(), newPlayerDto);
         // Return response
         return GameResponseDto.builder()
                 .gameId(game.getId())
@@ -291,7 +309,6 @@ public class GameService {
         String redisKey = "game::" + gameCode;
         GameStateRedisModel redisState = getGameStateFromRedis(redisKey);
 
-        // TODO get game from DB when redis is expired
         if (redisState == null) {
             // Fallback to DB
             Game game = gameRepository.findByGameCode(gameCode).orElseThrow(() -> new RuntimeException("Game not found"));
@@ -337,7 +354,6 @@ public class GameService {
         String redisKey = "game::" + gameCode;
         GameStateRedisModel redisState = getGameStateFromRedis(redisKey);
 
-        // TODO reconstruct from DB, update later
         if (redisState == null) {
             Game game = gameRepository.findByGameCode(gameCode).orElseThrow(() -> new RuntimeException("Game not found"));
             redisState = reconstructRedisState(game);
@@ -359,7 +375,7 @@ public class GameService {
         String latestDrawingData = getDrawingDataByAction(redisState, action);
 
         // Return available words redis
-        List<String>  availableWords = getAvailWordsByAction(redisState, action);
+        List<String> availableWords = getAvailWordsByAction(redisState, action);
 
         return GameResponseDto.builder()
                 .gameId(redisState.getGameId())
@@ -377,7 +393,7 @@ public class GameService {
                 .words(availableWords)
                 .players(redisState.getPlayers())
 
-                .currentDrawerSessionId(redisState.getCurrentDrawerSessionId()) // TODO consider to update later
+                .currentDrawerSessionId(redisState.getCurrentDrawerSessionId())
                 .action(action)
                 .guessingImageData(latestDrawingData)
                 .build();
@@ -449,7 +465,8 @@ public class GameService {
         redisState.setStatus(GameStatus.IN_PROGRESS);
         redisState.setCurrentRound(redisState.getCurrentRound() + 1); // round = 1
         redisState.setCurrentTurnNum(redisState.getCurrentTurnNum() + 1); //  turn 1 :  drawing, turn 2: guessing
-        redisState.setCurrentDrawerSessionId(firstDrawer.getPlayerSessionId()); // TODO update drawer and guesser
+        redisState.setCurrentDrawerSessionId(firstDrawer.getPlayerSessionId());
+        redisState.setStartedAt(game.getStartedAt());
 
         // Initialize first round, round have the same attribute to spectator
         SpectateGameRoundDto firstRound = SpectateGameRoundDto.builder()
@@ -474,16 +491,6 @@ public class GameService {
                 .map(WordStatusDto::getWord)
                 .collect(Collectors.toList());
 
-        // TODO : Websocket Broadcast game started
-//        GameStateMessageDto stateMessage = GameStateMessageDto.builder().type("GAME_STARTED")
-//                .gameCode(gameCode)
-//                .currentRound(1)
-//                .maxRounds(redisState.getMaxRounds())
-//                .currentDrawer(firstDrawer.getNickname())
-//                .status(GameStatus.IN_PROGRESS)
-//                .build();
-//
-//        webSocketService.broadcastGameState(gameCode, stateMessage);
         // set action, session ids are equal, draw
         String action = body.getPlayerSessionId().equals(firstDrawer.getPlayerSessionId()) ? "draw" : "wait";
         return GameResponseDto.builder()
@@ -500,7 +507,7 @@ public class GameService {
                 .isHost(true)
                 .words(availableWords)
                 .players(redisState.getPlayers())
-                .currentDrawerSessionId(redisState.getCurrentDrawerSessionId()) // TODO consider to update drawer and guesser
+                .currentDrawerSessionId(redisState.getCurrentDrawerSessionId())
                 .action(action)
                 .build();
     }
@@ -524,7 +531,6 @@ public class GameService {
         GameStateRedisModel redisState = getGameStateFromRedis(redisKey);
 
         if (redisState == null) {
-            // TODO get information again from db
             throw new RuntimeException("Game not found in cache");
         }
 
@@ -587,23 +593,12 @@ public class GameService {
         currentRound.setSelectedWord(request.getSelectedWord());
         currentRound.setDrawingData(request.getDrawingData());
         currentRound.setContainingText(containingKeyword);
-        currentRound.setDrawingTime(request.getDrawingTime());
+        currentRound.setDrawingTime(redisState.getDrawingTime() - request.getDrawingTimeLeft());
         currentRound.setPenaltyPoints(penalty);
         currentRound.setSubmitAt(LocalDateTime.now());
 
         // Save to Redis
         redisTemplate.opsForValue().set(redisKey, redisState, 240, TimeUnit.HOURS);
-
-        // TODO update websocket Broadcast drawing to all players
-//        DrawingSubmitMessageDto drawingMessage = DrawingSubmitMessageDto.builder()
-//                .roundId(redisState.getCurrentRound())
-//                .drawer(drawer.getNickname())
-//                .drawingData(request.getDrawingData())
-//                .containsText(containsKeyword)
-//                .containsKeyword(containsKeyword)
-//                .build();
-//
-//        webSocketService.broadcastDrawing(gameCode, drawingMessage);
 
         log.info("Drawing submitted by {} for word '{}'. Penalty: {}, in round {} in turn {}", drawer.getNickname(), request.getSelectedWord(), penalty, currentRound.getRoundNumber(), currentRound.getTurnNumber());
 
@@ -680,7 +675,7 @@ public class GameService {
             // Base points: Max = max time each guessing round
             // Bonus: guess sooner get more points
 
-            pointsEarned = redisState.getGuessingTime() - request.getGuessingTime(); // Max = guessing time, min : 0
+            pointsEarned = request.getGuessingTimeLeft(); // Max = guessing time, min : 0
             // Update player score
             guesser.setScore(guesser.getScore() + pointsEarned);
         }
@@ -699,7 +694,7 @@ public class GameService {
 
         // guess correct move to next step
         // or time out
-        if (isCorrect || (redisState.getGuessingTime() - request.getGuessingTime() <= 0)) {
+        if (isCorrect || (request.getGuessingTimeLeft() <= 0)) {
             // save history to db
             saveRoundHistoryToDB(redisState, currentRound, gameCode);
             // handle turn
@@ -709,16 +704,6 @@ public class GameService {
         // Save to Redis
         redisTemplate.opsForValue().set(redisKey, redisState, 240, TimeUnit.HOURS);
 
-//        // TODO websocket Broadcast guess to all players
-//        GuessSubmittedMessageDto guessMessage = GuessSubmittedMessageDto.builder()
-//                .roundId(redisState.getCurrentRound())
-//                .playerNickname(guesser.getNickname())
-//                .guess(request.getGuess())
-//                .isCorrect(isCorrect)
-//                .pointsEarned(pointsEarned)
-//                .build();
-//
-//
         log.info("Guess submitted by {}: '{}' - Correct: {}, Points: {}", guesser.getNickname(), request.getGuess(), isCorrect, pointsEarned);
 
         return SubmitGuessResponseDto.builder()
@@ -881,7 +866,6 @@ public class GameService {
      * @param redisState redis with all information of rounds
      */
     private void finishGame(String gameCode, GameStateRedisModel redisState) {
-        redisState.setStatus(GameStatus.FINISHED);
 
         // Update DB
         Game game = gameRepository.findByGameCode(gameCode).orElseThrow(() -> new RuntimeException("Game not found"));
@@ -889,6 +873,11 @@ public class GameService {
         game.setStatus(GameStatus.FINISHED);
         game.setFinishedAt(LocalDateTime.now());
         gameRepository.save(game);
+
+        // set redis's field
+
+        redisState.setStatus(GameStatus.FINISHED);
+        redisState.setFinishedAt(game.getFinishedAt());
 
         // Update player scores in DB
         for (PlayerDto player : redisState.getPlayers()) {
@@ -899,16 +888,6 @@ public class GameService {
                 guestPlayerRepository.save(dbPlayer);
             }
         }
-
-        // TODO websocket Broadcast game finished
-//        GameStateMessageDto finishedMessage = GameStateMessageDto.builder()
-//                .type("GAME_FINISHED")
-//                .gameCode(gameCode)
-//                .currentRound(redisState.getCurrentRound())
-//                .maxRounds(redisState.getMaxRounds())
-//                .status(GameStatus.FINISHED).build();
-//
-//        webSocketService.broadcastGameState(gameCode, finishedMessage);
 
         log.info("Game {} finished", gameCode);
     }
@@ -923,12 +902,6 @@ public class GameService {
     private void saveRoundHistoryToDB(GameStateRedisModel state, SpectateGameRoundDto roundDto, String gameCode) {
         Game game = gameRepository.findByGameCode(gameCode).orElse(null);
         if (game == null) return;
-
-
-        GuessDto winningGuess = roundDto.getGuesses().stream()
-                .filter(GuessDto::getIsCorrect)
-                .findFirst()
-                .orElse(null); //
 
         int turnNum = state.getCurrentTurnNum(); // 1: drawing, 2: guessing
 
@@ -945,19 +918,22 @@ public class GameService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        if (winningGuess != null) {
-            history.setGuesserPlayerNickname(winningGuess.getPlayerNickname());
-            history.setGuesserPlayerSessionId(winningGuess.getPlayerSessionId());
-            history.setFinalGuess(winningGuess.getGuessedWord());
-            history.setIsCorrect(true);
-            history.setPointsEarned(winningGuess.getPointsEarned());
-            history.setPenaltyPoints(0); // TODO update penalty points later
-        } else {
-            history.setIsCorrect(false);
-            history.setPointsEarned(0);
-        }
+        // convert redis to entity
+        List<GuessDto> guessDtoList = roundDto.getGuesses();
+        List<RoundHistoryGuess> roundHistoryGuessList = guessDtoList.stream().map(guessDto -> {
+            RoundHistoryGuess roundHistoryGuess = new RoundHistoryGuess();
+            roundHistoryGuess.setGuesserPlayerNickname(guessDto.getPlayerNickname());
+            roundHistoryGuess.setGuesserPlayerSessionId(guessDto.getPlayerSessionId());
+            roundHistoryGuess.setGuessedWord(guessDto.getGuessedWord());
+            roundHistoryGuess.setIsCorrect(guessDto.getIsCorrect());
+            roundHistoryGuess.setPointsEarned(guessDto.getPointsEarned());
+            roundHistoryGuess.setCreatedAt(guessDto.getSubmittedAt());
+            roundHistoryGuess.setRoundHistory(history);
+            return roundHistoryGuess;
+        }).toList();
 
         roundHistoryRepository.save(history);
+        roundHistoryGuessRepository.saveAll(roundHistoryGuessList);
     }
 
     private PlayerDto convertToPlayerDto(GuestPlayer player) {
@@ -965,21 +941,62 @@ public class GameService {
     }
 
     /**
-     * TODO
      * get information from db to reconstruct
      *
      * @param game game dto
      * @return new redis object
      */
     private GameStateRedisModel reconstructRedisState(Game game) {
+        // Reconstruct players
         List<GuestPlayer> players = guestPlayerRepository.findByGameAndIsActiveTrueOrderByJoinedOrderAsc(game);
         List<PlayerDto> playerDtos = players.stream().map(this::convertToPlayerDto).collect(Collectors.toList());
 
         // Reconstruct words
-        List<String> rawWords = huggingFaceService.getOrCreateKeywords(game.getTheme(), game.getMaxRounds() + 3);
-        List<WordStatusDto> words = rawWords.stream()
-                .map(w -> new WordStatusDto(w, 0, 0, null, null))
+        List<GameWord> gameWordList = gameWordRepository.findByGame(game);
+        List<WordStatusDto> words = gameWordList.stream()
+                .map(w -> new WordStatusDto(w.getWord(), 0, 0, null, null))
                 .collect(Collectors.toList());
+
+        // Reconstruct rounds
+        List<RoundHistory> roundHistoryList = roundHistoryRepository.findByGameId(game.getId());
+        List<RoundHistoryGuess> roundHistoryGuessList = roundHistoryGuessRepository.findByRoundHistoryInOrderByIdAsc(roundHistoryList);
+        Map<Long, List<GuessDto>> guessDtoMap = new HashMap<>();
+        for (RoundHistoryGuess roundHistoryGuess : roundHistoryGuessList) {
+            GuessDto guessDto = new GuessDto();
+            guessDto.setPlayerNickname(roundHistoryGuess.getGuesserPlayerNickname());
+            guessDto.setPlayerSessionId(roundHistoryGuess.getGuesserPlayerSessionId());
+            guessDto.setGuessedWord(roundHistoryGuess.getGuessedWord());
+            guessDto.setIsCorrect(roundHistoryGuess.getIsCorrect());
+            guessDto.setPointsEarned(roundHistoryGuess.getPointsEarned());
+            guessDto.setSubmittedAt(roundHistoryGuess.getCreatedAt());
+
+            if(guessDtoMap.containsKey(roundHistoryGuess.getRoundHistory().getId())){
+                guessDtoMap.get(roundHistoryGuess.getRoundHistory().getId()).add(guessDto);
+            } else {
+                List<GuessDto> list = new ArrayList<>();
+                list.add(guessDto);
+                guessDtoMap.put(roundHistoryGuess.getRoundHistory().getId(), list);
+            }
+        }
+
+        List<SpectateGameRoundDto> spectateGameRoundDtoList = roundHistoryList.stream().map(roundHistory -> {
+            SpectateGameRoundDto spectateGameRoundDto = new SpectateGameRoundDto();
+            spectateGameRoundDto.setRoundNumber(roundHistory.getRoundNumber());
+            spectateGameRoundDto.setTurnNumber(roundHistory.getTurnNumber());
+            spectateGameRoundDto.setDrawerNickname(roundHistory.getDrawerPlayerNickname());
+            spectateGameRoundDto.setDrawerPlayerSessionId(roundHistory.getDrawerPlayerSessionId());
+            spectateGameRoundDto.setSelectedWord(roundHistory.getWordSelected());
+            spectateGameRoundDto.setDrawingData(roundHistory.getDrawingData());
+            spectateGameRoundDto.setDrawingTime(roundHistory.getDrawingTime());
+            spectateGameRoundDto.setContainingText(roundHistory.getDrawingContainingText());
+            spectateGameRoundDto.setPenaltyPoints(roundHistory.getPenaltyPoints());
+            spectateGameRoundDto.setSubmitAt(roundHistory.getCreatedAt());
+
+            List<GuessDto> list = guessDtoMap.get(roundHistory.getId());
+            spectateGameRoundDto.setGuesses(list != null ? list : new ArrayList<>());
+            return spectateGameRoundDto;
+        }).toList();
+
 
         return GameStateRedisModel.builder()
                 .gameId(game.getId())
@@ -992,9 +1009,9 @@ public class GameService {
                 .guessingTime(game.getGuessingTime())
                 .words(words)
                 .players(playerDtos)
-                .rounds(new ArrayList<>()) // TODO, next save round in db or accept replay each rounds
+                .rounds(spectateGameRoundDtoList)
                 .hostId(game.getHostId())
-                .hostPlayerSessionId(game.getHostPlayerSessionId()) // TODO, next session id of player
+                .hostPlayerSessionId(game.getHostPlayerSessionId())
                 .createdAt(game.getCreatedAt())
                 .startedAt(game.getStartedAt())
                 .finishedAt(game.getFinishedAt())

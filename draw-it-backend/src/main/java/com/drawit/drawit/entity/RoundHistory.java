@@ -35,14 +35,8 @@ public class RoundHistory {
     private String drawingData;
 
     private String drawingContainingText;
-    private Integer penaltyPoints; // reduching point
-
-    private String guesserPlayerSessionId;
-    private String guesserPlayerNickname;
-
-    private String finalGuess; // guessed word final
-    private Boolean isCorrect;
-    private Integer pointsEarned;
+    private Integer penaltyPoints; // reducing point
+    private Integer drawingTime;
 
     private LocalDateTime createdAt;
 }

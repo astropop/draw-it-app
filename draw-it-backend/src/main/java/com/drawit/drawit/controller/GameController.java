@@ -5,7 +5,7 @@ package com.drawit.drawit.controller;
 import com.drawit.drawit.dto.GameResponseDto;
 import com.drawit.drawit.dto.creategame.CreateGameRequestDto;
 import com.drawit.drawit.dto.getgame.GetGameRequestDto;
-import com.drawit.drawit.dto.getgamelist.GameListItemResponseDto;
+import com.drawit.drawit.dto.getgamelist.GameListResponseDto;
 import com.drawit.drawit.dto.joingame.JoinGameRequestDto;
 import com.drawit.drawit.dto.spectategame.SpectateGameResponseDto;
 import com.drawit.drawit.dto.startgame.StartGameRequestDto;
@@ -22,8 +22,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/games")
 @RequiredArgsConstructor
@@ -35,9 +33,11 @@ public class GameController {
 
 
     @GetMapping("/list")
-    public ResponseEntity<List<GameListItemResponseDto>> getGameList() {
+    public ResponseEntity<GameListResponseDto> getGameList(@RequestParam(defaultValue = "1") int page,
+                                                           @RequestParam(defaultValue = "12") int pageSize,
+                                                           @RequestParam(defaultValue = "desc") String sort) {
         try {
-            List<GameListItemResponseDto> games = gameService.getGameList();
+            GameListResponseDto games = gameService.getGameList(page, pageSize, sort);
             return ResponseEntity.ok(games);
         } catch (Exception e) {
             log.error("Error getGameList", e);

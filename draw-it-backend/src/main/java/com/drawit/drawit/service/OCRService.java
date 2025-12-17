@@ -50,7 +50,7 @@ public class OCRService {
      */
     public int calculatePenalty(String containingKeyword) {
         if (containingKeyword != null) {
-            return 20; // Deduct 20 points
+            return 0; // TODO no reduce point
         }
         return 0;
     }
