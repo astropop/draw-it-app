@@ -1,27 +1,41 @@
 services:
-  redis:
-    image: redis:8.2-alpine
-    container_name: drawing-game-redis
+  my-redis:
+    image: redis:alpine
+    container_name: my-redis
     ports:
-      - "6379:6379"
+      - "9736:6379"
     volumes:
       - redis-data:/data
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      shared:
-        aliases:
-          - drawing-game-redis
+      - shared
+
+  drawing-it-backend:
+    image: drawing-it-backend/drawing-it-backend:latest
+    container_name: drawing-it-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - VIRTUAL_HOST=tai.vnpsc.com,www.tai.vnpsc.com
+      - VIRTUAL_PATH=/drawit/api
+      - LETSENCRYPT_HOST=tai.vnpsc.com,www.tai.vnpsc.com
+    depends_on:
+      my-redis:
+        condition: service_healthy
+    networks:
+      - shared
+
 networks:
   shared:
     external: true
     name: my_tailt_shared_net
-
 
 volumes:
   redis-data:
