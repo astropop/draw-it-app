@@ -1,0 +1,57 @@
+name: "Build and deploy booking meeting room to server"
+
+on:
+  push:
+    branches:
+      - feature/final
+
+jobs:
+  deploy:
+    name: Deploy to server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: SSH and deploy
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.ONLINE_HOST }} # ip of server
+          username: ${{ secrets.ONLINE_USERNAME }} # Username to login to server
+          key: ${{ secrets.ONLINE_SSH_PRIVATE_KEY }} # Private key to login to server
+
+          script: |
+            set -e
+
+            docker container stop draw-it-frontend || true
+            docker container stop draw-it-backend || true
+
+            docker container remove draw-it-frontend || true
+            docker container remove draw-it-backend || true
+
+            docker image remove draw-it-frontend:latest || true
+            docker image remove draw-it-backend:latest || true
+            cd ${{ secrets.ONLINE_PATH_PROJECT }} 
+
+            if [ -d draw-it-app ]; then
+              cd draw-it-app
+              git fetch 
+              git pull
+            else
+              git clone -b feature/final git@github.com:astropop/draw-it-app.git
+              cd draw-it-app
+            fi
+
+            cd fe
+
+            docker compose build
+            docker compose up -d
+
+            cd ${{ secrets.ONLINE_PATH_PROJECT }}/draw-it-app/draw-it-backend
+
+            docker compose build
+            docker compose up -d
