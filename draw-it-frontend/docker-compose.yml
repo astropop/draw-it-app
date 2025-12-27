@@ -1,0 +1,21 @@
+services:
+  drawing-it-frontend:
+    build:
+      dockerfile: Dockerfile
+    image: drawing-it-frontend/drawing-it-frontend:latest # keep this setting for automatically refreshing docker
+    container_name: drawing-it-frontend # keep this setting for automatically refreshing docker
+    environment:
+      - NODE_ENV=production
+      - VIRTUAL_HOST=myapp.local,www.myapp.local
+      - VIRTUAL_PATH=/drawit
+      - LETSENCRYPT_HOST=myapp.local,www.myapp.local
+      - NEXT_PUBLIC_USE_MOCK=false
+      - NEXT_PUBLIC_API_URL=http://drawing-it-backend:8082
+      - NEXT_PUBLIC_WS_URL=ws://drawing-it-backend:8082/ws
+    networks:
+      - shared
+    restart: always
+networks:
+  shared:
+    external: true
+    name: my_tailt_shared_net
