@@ -45,8 +45,8 @@ jobs:
             docker container remove draw-it-backend || true
             docker container remove my-redis || true
 
-            docker image remove drawing-it-frontend/drawing-it-frontend:latest || true
-            docker image remove drawing-it-backend/drawing-it-backend:latest || true
+            docker image remove draw-it-frontend/draw-it-frontend:latest || true
+            docker image remove draw-it-backend/draw-it-backend:latest || true
             docker image remove redis:alpine || true
             cd ${{ secrets.ONLINE_PATH_PROJECT }} 
 

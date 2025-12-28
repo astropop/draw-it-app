@@ -18,9 +18,9 @@ services:
     networks:
       - shared
 
-  drawing-it-backend:
-    image: drawing-it-backend/drawing-it-backend:latest
-    container_name: drawing-it-backend
+  draw-it-backend:
+    image: draw-it-backend/draw-it-backend:latest
+    container_name: draw-it-backend
     build:
       context: .
       dockerfile: Dockerfile
