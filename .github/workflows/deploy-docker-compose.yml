@@ -3,12 +3,22 @@ name: "Build and deploy booking meeting room to server"
 on:
   push:
     branches:
-      - feature/final
+      - feature/publish-app-1st
 
 jobs:
   deploy:
     name: Deploy to server
     runs-on: ubuntu-latest
+    env:
+      REDIS_HOST: ${{ secrets.REDIS_HOST }}
+      REDIS_PORT: ${{ secrets.REDIS_PORT }}
+      REDIS_PASS: ${{ secrets.REDIS_PASS }}
+      DRAWIT_HUGGINGFACE_TK: ${{ secrets.DRAWIT_HUGGINGFACE_TK }}
+      DRAWIT_DB_SCHEMA: ${{ secrets.DRAWIT_DB_SCHEMA }}
+      DRAWIT_DB_URL: ${{ secrets.DRAWIT_DB_URL }}
+      DRAWIT_DB_PORT: ${{ secrets.DRAWIT_DB_PORT }}
+      DRAWIT_DB_USER: ${{ secrets.DRAWIT_DB_USER }}
+      DRAWIT_DB_PASS: ${{ secrets.DRAWIT_DB_PASS }}
 
     steps:
       - name: Checkout code
@@ -29,12 +39,15 @@ jobs:
 
             docker container stop draw-it-frontend || true
             docker container stop draw-it-backend || true
+            docker container stop my-redis || true
 
             docker container remove draw-it-frontend || true
             docker container remove draw-it-backend || true
+            docker container remove my-redis || true
 
-            docker image remove draw-it-frontend:latest || true
-            docker image remove draw-it-backend:latest || true
+            docker image remove drawing-it-frontend/drawing-it-frontend:latest || true
+            docker image remove drawing-it-backend/drawing-it-backend:latest || true
+            docker image remove redis:alpine || true
             cd ${{ secrets.ONLINE_PATH_PROJECT }} 
 
             if [ -d draw-it-app ]; then
@@ -42,11 +55,11 @@ jobs:
               git fetch 
               git pull
             else
-              git clone -b feature/final git@github.com:astropop/draw-it-app.git
+              git clone -b feature/publish-app-1st git@github.com:astropop/draw-it-app.git
               cd draw-it-app
             fi
 
-            cd fe
+            cd draw-it-frontend
 
             docker compose build
             docker compose up -d
