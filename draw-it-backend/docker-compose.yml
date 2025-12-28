@@ -2,8 +2,7 @@ services:
   my-redis:
     image: redis:alpine
     container_name: my-redis
-    environment:
-      - REDIS_PASS
+    env_file: ".env.prod"
     ports:
       - "9736:6379"
     volumes:
@@ -21,6 +20,7 @@ services:
   draw-it-backend:
     image: draw-it-backend/draw-it-backend:latest
     container_name: draw-it-backend
+    env_file: ".env.prod"
     build:
       context: .
       dockerfile: Dockerfile

@@ -9,16 +9,6 @@ jobs:
   deploy:
     name: Deploy to server
     runs-on: ubuntu-latest
-    env:
-      REDIS_HOST: ${{ secrets.REDIS_HOST }}
-      REDIS_PORT: ${{ secrets.REDIS_PORT }}
-      REDIS_PASS: ${{ secrets.REDIS_PASS }}
-      DRAWIT_HUGGINGFACE_TK: ${{ secrets.DRAWIT_HUGGINGFACE_TK }}
-      DRAWIT_DB_SCHEMA: ${{ secrets.DRAWIT_DB_SCHEMA }}
-      DRAWIT_DB_URL: ${{ secrets.DRAWIT_DB_URL }}
-      DRAWIT_DB_PORT: ${{ secrets.DRAWIT_DB_PORT }}
-      DRAWIT_DB_USER: ${{ secrets.DRAWIT_DB_USER }}
-      DRAWIT_DB_PASS: ${{ secrets.DRAWIT_DB_PASS }}
 
     steps:
       - name: Checkout code
@@ -33,21 +23,9 @@ jobs:
           host: ${{ secrets.ONLINE_HOST }} # ip of server
           username: ${{ secrets.ONLINE_USERNAME }} # Username to login to server
           key: ${{ secrets.ONLINE_SSH_PRIVATE_KEY }} # Private key to login to server
-
           script: |
             set -e
 
-            docker container stop draw-it-frontend || true
-            docker container stop draw-it-backend || true
-            docker container stop my-redis || true
-
-            docker container remove draw-it-frontend || true
-            docker container remove draw-it-backend || true
-            docker container remove my-redis || true
-
-            docker image remove draw-it-frontend/draw-it-frontend:latest || true
-            docker image remove draw-it-backend/draw-it-backend:latest || true
-            docker image remove redis:alpine || true
             cd ${{ secrets.ONLINE_PATH_PROJECT }} 
 
             if [ -d draw-it-app ]; then
@@ -59,12 +37,24 @@ jobs:
               cd draw-it-app
             fi
 
-            cd draw-it-frontend
+            cd ${{ secrets.ONLINE_PATH_PROJECT }}/draw-it-app/draw-it-frontend
 
             docker compose build
-            docker compose up -d
+            docker compose up -d --remove-orphans
+            docker image prune -f
 
             cd ${{ secrets.ONLINE_PATH_PROJECT }}/draw-it-app/draw-it-backend
 
+            echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" > .env.prod
+            echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env.prod
+            echo "REDIS_PASS=${{ secrets.REDIS_PASS }}" >> .env.prod
+            echo "DRAWIT_HUGGINGFACE_TK=${{ secrets.DRAWIT_HUGGINGFACE_TK }}" >> .env.prod
+            echo "DRAWIT_DB_SCHEMA=${{ secrets.DRAWIT_DB_SCHEMA }}" >> .env.prod
+            echo "DRAWIT_DB_URL=${{ secrets.DRAWIT_DB_URL }}" >> .env.prod
+            echo "DRAWIT_DB_PORT=${{ secrets.DRAWIT_DB_PORT }}" >> .env.prod
+            echo "DRAWIT_DB_USER=${{ secrets.DRAWIT_DB_USER }}" >> .env.prod
+            echo "DRAWIT_DB_PASS=${{ secrets.DRAWIT_DB_PASS }}" >> .env.prod
+
             docker compose build
-            docker compose up -d
+            docker compose up -d --remove-orphans
+            docker image prune -f
