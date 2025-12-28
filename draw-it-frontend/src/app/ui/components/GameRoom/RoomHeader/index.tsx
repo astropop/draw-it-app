@@ -1,6 +1,6 @@
 import { GameResponseDto, GameStatus } from "@/app/lib/game.type";
 import { getStatusColor, getStatusLabel } from "@/app/ui/utils";
-import { Paper, Grid, Typography, Chip, Stack, Box } from "@mui/material";
+import { Box, Chip, Grid, Paper, Typography } from "@mui/material";
 
 export type RoomHeaderProps = {
   localGameState: GameResponseDto; // status in object can be changed later

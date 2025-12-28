@@ -26,7 +26,7 @@ const GameAreaInProgress = ({ props }: { props: GameAreaInProgressProps }) => {
   /*
    * constants
    */
-  const route = useRouter();
+  // const route = useRouter();
   /*
    * State management
    */

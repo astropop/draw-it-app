@@ -2,11 +2,10 @@ import { getGame } from "@/app/lib/api/GetGame/fetcher";
 import { GameStatus } from "@/app/lib/game.type";
 import GameRoom from "@/app/ui/components/GameRoom";
 import { Metadata } from "next";
-import { cookies } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { cache } from "react";
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
+// const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 type GamePageProps = { params: Promise<{ code: string }> };
 

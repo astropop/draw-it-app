@@ -1,11 +1,9 @@
-import { GameResponseDto, GameStatus } from "@/app/lib/game.type";
-import DeleteIcon from "@mui/icons-material/Delete";
+import { GameResponseDto } from "@/app/lib/game.type";
 import PeopleIcon from "@mui/icons-material/People";
 import {
   Box,
   Chip,
   Divider,
-  IconButton,
   List,
   ListItem,
   ListItemText,

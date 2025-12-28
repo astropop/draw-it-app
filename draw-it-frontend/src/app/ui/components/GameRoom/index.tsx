@@ -2,7 +2,7 @@
 
 import { GameResponseDto, GameStatus } from "@/app/lib/game.type";
 import { Card, CardContent, Container, Grid, Stack } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import GameAreaInProgress from "./GameArea/GameAreaInProgress";
 import GameAreaWaiting from "./GameArea/GameAreaWaiting";
 import Players from "./LeftPanel/Players";
@@ -19,23 +19,23 @@ type GameRoomProps = {
 
 // Default constants
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
+// const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 export default function GameRoom({ gameData }: GameRoomProps) {
   /*
-   * constants area
-   */
-  const isHost = gameData.isHost;
-  const route = useRouter();
-  /*
    * State management
    */
-  const [currentPlayerSessionId, setCurrentPlayerSessionId] =
-    useState<string>("");
-  const [currentNickname, setCurrentNickname] = useState<string>("");
+
   const [localGameState, setLocalGameState] =
     useState<GameResponseDto>(gameData); // updateable game state
-
+  // const currentNickname = localStorage.getItem("nickname") || "";
+  const [currentNickname, setCurrentNickname] = useState<string>("");
+  /*
+   * constants area
+   */
+  const currentPlayerSessionId = gameData.playerSessionId;
+  const isHost = localGameState.isHost;
+  const route = useRouter();
   /*
    * functions
    */
@@ -74,34 +74,20 @@ export default function GameRoom({ gameData }: GameRoomProps) {
   /*
    * Hooks area
    */
-  // Initialize session from localStorage
+
   useEffect(() => {
-    const sessionId =
-      localStorage.getItem("playerSessionId") || gameData.playerSessionId;
-    const nickname = localStorage.getItem("nickname") || "";
+    const nickname = localStorage.getItem("nickname");
 
-    setCurrentPlayerSessionId(sessionId);
-    setCurrentNickname(nickname);
-  }, []);
-
+    if (nickname) {
+      setCurrentNickname(nickname);
+    }
+  }, [gameData.gameCode]);
   // redirect page after game is finished
   useEffect(() => {
     if (localGameState.status === GameStatus.FINISHED) {
-      route.push(`/spectate/${localGameState.gameCode}`);
+      route.replace(`/spectate/${localGameState.gameCode}`); // user cannot go back
     }
-  }, [localGameState]);
-
-  // Auto-refresh game state when in progress (every 3 seconds)
-  // useEffect(() => {
-  //   if (localGameState.status !== GameStatus.IN_PROGRESS) return;
-
-  //   const interval = setInterval(() => {
-  //     refreshGameState();
-  //   }, 3000);
-
-  //   return () => clearInterval(interval);
-  // }, [localGameState.status, gameData.gameCode, currentPlayerSessionId]);
-  //
+  }, [localGameState.status, localGameState.gameCode, route]);
 
   return (
     <Container maxWidth='xl' sx={{ py: 3 }}>

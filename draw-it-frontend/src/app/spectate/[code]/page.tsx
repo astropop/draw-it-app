@@ -3,11 +3,10 @@
 import { spectateGame } from "@/app/lib/api/SpectateGame/fetcher";
 import GameSpectator from "@/app/ui/components/GameSpectator";
 import { Metadata } from "next";
-import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { cache } from "react";
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
+// const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 type SpectatePageProps = { params: Promise<{ code: string }> };
 
