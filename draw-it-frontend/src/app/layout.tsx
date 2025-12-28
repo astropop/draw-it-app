@@ -1,9 +1,9 @@
+import { Box, Paper, Typography } from "@mui/material";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
-import { Box, Container, Paper, Typography } from "@mui/material";
 import Link from "next/link";
+import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,7 +54,7 @@ export default function RootLayout({
             }}
           >
             <Typography variant='caption' color='text.secondary'>
-              Author : Tai Le - Do not copy
+              Author : Tai Le - Draw it
             </Typography>
           </Box>
         </AppRouterCacheProvider>
