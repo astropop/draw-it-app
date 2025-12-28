@@ -6,9 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -37,7 +35,6 @@ public class HuggingFaceService {
             .version(HttpClient.Version.HTTP_2)
             .connectTimeout(Duration.ofSeconds(10))
             .build();
-//    private final WebClient.Builder webClientBuilder;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -82,12 +79,6 @@ public class HuggingFaceService {
                 "Generate %d simple English words about '%s'. Only the words, comma separated, nothing else.",
                 Math.max(count + 2, 7), theme);
 
-//        WebClient webClient = webClientBuilder
-//                .baseUrl(apiUrl)
-//                .defaultHeader("Authorization", "Bearer " + apiToken)
-//                .defaultHeader("Content-Type", "application/json")
-//                .build();
-
         Map<String, Object> requestBody = Map.of(
                 "model", model,
                 "stream", false,
@@ -109,12 +100,7 @@ public class HuggingFaceService {
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-//            String response = webClient.post()
-//                    .bodyValue(requestBody)
-//                    .retrieve()
-//                    .bodyToMono(String.class)
-//                    .timeout(Duration.ofSeconds(12))
-//                    .block();
+
             return parseWords2(response.body());
 
         } catch (Exception e) {
