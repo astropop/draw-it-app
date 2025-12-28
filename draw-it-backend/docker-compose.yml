@@ -2,6 +2,8 @@ services:
   my-redis:
     image: redis:alpine
     container_name: my-redis
+    environment:
+      - REDIS_PASS
     ports:
       - "9736:6379"
     volumes:

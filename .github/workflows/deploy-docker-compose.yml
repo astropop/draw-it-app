@@ -1,4 +1,4 @@
-name: "Build and deploy booking meeting room to server"
+name: "Build and deploy draw-it app to server"
 
 on:
   push:
