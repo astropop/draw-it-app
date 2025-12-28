@@ -45,15 +45,19 @@ jobs:
 
             cd ${{ secrets.ONLINE_PATH_PROJECT }}/draw-it-app/draw-it-backend
 
-            echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" > .env.prod
-            echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env.prod
-            echo "REDIS_PASS=${{ secrets.REDIS_PASS }}" >> .env.prod
-            echo "DRAWIT_HUGGINGFACE_TK=${{ secrets.DRAWIT_HUGGINGFACE_TK }}" >> .env.prod
-            echo "DRAWIT_DB_SCHEMA=${{ secrets.DRAWIT_DB_SCHEMA }}" >> .env.prod
-            echo "DRAWIT_DB_URL=${{ secrets.DRAWIT_DB_URL }}" >> .env.prod
-            echo "DRAWIT_DB_PORT=${{ secrets.DRAWIT_DB_PORT }}" >> .env.prod
-            echo "DRAWIT_DB_USER=${{ secrets.DRAWIT_DB_USER }}" >> .env.prod
-            echo "DRAWIT_DB_PASS=${{ secrets.DRAWIT_DB_PASS }}" >> .env.prod
+            echo "DRAWIT_DB_URL=${{ secrets.DRAWIT_DB_URL }}"
+
+            echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" > .env
+            echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
+            echo "REDIS_PASS=${{ secrets.REDIS_PASS }}" >> .env
+            echo "DRAWIT_HUGGINGFACE_TK=${{ secrets.DRAWIT_HUGGINGFACE_TK }}" >> .env
+            echo "DRAWIT_DB_SCHEMA=${{ secrets.DRAWIT_DB_SCHEMA }}" >> .env
+            echo "DRAWIT_DB_URL=${{ secrets.DRAWIT_DB_URL }}" >> .env
+            echo "DRAWIT_DB_PORT=${{ secrets.DRAWIT_DB_PORT }}" >> .env
+            echo "DRAWIT_DB_USER=${{ secrets.DRAWIT_DB_USER }}" >> .env
+            echo "DRAWIT_DB_PASS=${{ secrets.DRAWIT_DB_PASS }}" >> .env
+
+            cat .env
 
             docker compose build
             docker compose up -d --remove-orphans
