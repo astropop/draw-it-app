@@ -7,17 +7,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -33,9 +33,13 @@ public class HuggingFaceService {
     @Autowired
     private WordCacheRepository wordCacheRepository;
 
-    private final WebClient.Builder webClientBuilder;
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_2)
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
+//    private final WebClient.Builder webClientBuilder;
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * generate and store into cache, calls AI when theme is new
@@ -78,11 +82,11 @@ public class HuggingFaceService {
                 "Generate %d simple English words about '%s'. Only the words, comma separated, nothing else.",
                 Math.max(count + 2, 7), theme);
 
-        WebClient webClient = webClientBuilder
-                .baseUrl(apiUrl)
-                .defaultHeader("Authorization", "Bearer " + apiToken)
-                .defaultHeader("Content-Type", "application/json")
-                .build();
+//        WebClient webClient = webClientBuilder
+//                .baseUrl(apiUrl)
+//                .defaultHeader("Authorization", "Bearer " + apiToken)
+//                .defaultHeader("Content-Type", "application/json")
+//                .build();
 
         Map<String, Object> requestBody = Map.of(
                 "model", model,
@@ -93,14 +97,25 @@ public class HuggingFaceService {
                         )
                 )
         );
+
+        String jsonBody = objectMapper.writeValueAsString(requestBody);
         try {
-            String response = webClient.post()
-                    .bodyValue(requestBody)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(12))
-                    .block();
-            return parseWords2(response);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(apiUrl))
+                    .header("Authorization", "Bearer " + apiToken)
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(12)) // Set timeout per request
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+//            String response = webClient.post()
+//                    .bodyValue(requestBody)
+//                    .retrieve()
+//                    .bodyToMono(String.class)
+//                    .timeout(Duration.ofSeconds(12))
+//                    .block();
+            return parseWords2(response.body());
 
         } catch (Exception e) {
             log.warn("HuggingFace API fail/timeout: {}", e.getMessage());
@@ -144,16 +159,4 @@ public class HuggingFaceService {
 
         return result;
     }
-
-    private List<String> getDefaultWords(String theme, int count) {
-        List<String> raw = switch (theme.toLowerCase()) {
-            case "animals" -> List.of("dog", "cat", "horse", "lion", "tiger", "bear", "elephant", "wolf");
-            case "food" -> List.of("pizza", "soup", "rice", "bread", "cake", "curry", "fish", "meat");
-            default -> List.of("house", "tree", "car", "star", "phone", "river", "book");
-        };
-        List<String> copy = new ArrayList<>(raw);
-        Collections.shuffle(copy);
-        return copy.subList(0, Math.min(count, copy.size()));
-    }
-
 }
