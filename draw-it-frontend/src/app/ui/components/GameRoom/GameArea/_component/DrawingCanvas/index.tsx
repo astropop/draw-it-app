@@ -2,14 +2,7 @@
 
 import DrawIcon from "@mui/icons-material/Draw";
 import WashIcon from "@mui/icons-material/Wash";
-import {
-  Alert,
-  Box,
-  Button,
-  IconButton,
-  Slider,
-  Typography,
-} from "@mui/material";
+import { Box, Button, IconButton, Slider, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 
 interface DrawingCanvasProps {
@@ -101,6 +94,8 @@ export default function DrawingCanvas({
     const { x, y } = getCoordinates(e);
 
     const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
     const width = canvas.width / dpr;
@@ -108,19 +103,20 @@ export default function DrawingCanvas({
 
     // Chọn kích thước dựa trên công cụ
     const currentSize = tool === "eraser" ? eraserSize : penSize;
-    context.lineWidth = currentSize;
-    context.strokeStyle = tool === "eraser" ? "#ffffff" : brushColor;
+
+    ctx.lineWidth = currentSize;
+    ctx.strokeStyle = tool === "eraser" ? "#ffffff" : brushColor;
 
     // Vẽ đường cong Bézier để có nét mượt mà
     // Điểm điều khiển là điểm giữa giữa vị trí cũ và vị trí mới
     const controlX = (lastPos.x + x) / 2;
     const controlY = (lastPos.y + y) / 2;
 
-    context.beginPath();
-    context.moveTo(lastPos.x, lastPos.y);
-    context.quadraticCurveTo(controlX, controlY, x, y);
-    context.stroke();
-
+    ctx.beginPath();
+    ctx.moveTo(lastPos.x, lastPos.y);
+    ctx.quadraticCurveTo(controlX, controlY, x, y);
+    ctx.stroke();
+    setContext(ctx);
     setLastPos({ x, y });
 
     // Update parent with current drawing data on every stroke

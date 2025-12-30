@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  reactStrictMode: false,
+  output: "standalone",
+  basePath: "/drawit",
+  assetPrefix: "/drawit",
 };
 
 export default nextConfig;

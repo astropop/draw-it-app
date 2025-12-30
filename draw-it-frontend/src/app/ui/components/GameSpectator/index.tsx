@@ -307,7 +307,7 @@ export default function GameSpectator({
                                       {guess.playerNickname}
                                     </TableCell>
                                     <TableCell sx={{ fontStyle: "italic" }}>
-                                      "{guess.guessedWord}"
+                                      &quot;{guess.guessedWord}&quot;
                                     </TableCell>
                                     <TableCell align='center'>
                                       {guess.isCorrect ? (

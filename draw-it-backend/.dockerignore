@@ -1,0 +1,32 @@
+# Maven/Gradle build artifacts
+target/
+build/
+.gradle/
+.m2/
+.mvn/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+
+# Configuration files (if sensitive and not needed in the image)
+application*.properties
+application*.yml
+
+# Other common exclusions
+**/*.jar.original

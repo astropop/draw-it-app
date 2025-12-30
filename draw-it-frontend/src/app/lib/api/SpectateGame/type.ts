@@ -1,7 +1,7 @@
 import { GameStatus, PlayerDto } from "../../game.type";
 
 export interface SpectateGameResponseDto {
-  gameCode: String;
+  gameCode: string;
   theme: string;
   status: GameStatus;
   currentRoundNumber: number;

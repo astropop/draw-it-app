@@ -3,15 +3,11 @@
 
 import { getGameList } from "@/app/lib/api/GetGameList/fetcher";
 import { GameListResponseDto } from "@/app/lib/api/GetGameList/type";
-import {
-  GameListQueryInput,
-  gameListQuerySchema,
-  SortType,
-} from "@/app/lib/validation";
+import { gameListQuerySchema, SortType } from "@/app/lib/validation";
 import { Box, Button, Container, Grid, Typography } from "@mui/material";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { getStatusColor, getStatusLabel } from "../../utils";
 import { PaginationControlled } from "../PaginationControlled";
 import GameCard from "./GameCard";
@@ -32,24 +28,23 @@ export default function GameLobby({ initialGames, pageSize }: GameLobbyProps) {
    */
   const searchParams = useSearchParams();
   const [games, setGames] = useState<GameListResponseDto>(initialGames);
-  const [queryParams, setQueryParams] = useState<GameListQueryInput>({
-    page: 1,
-    sort: "desc" as const,
-  });
   /*
    * hooks
    */
   // Parse and validate URL params
-  useEffect(() => {
+  const queryParams = useMemo(() => {
     const params = Object.fromEntries(searchParams);
     const parsed = gameListQuerySchema.safeParse(params);
-
     if (parsed.success) {
-      setQueryParams({
+      return {
         page: parsed.data.page,
         sort: parsed.data.sort,
-      });
+      };
     }
+    return {
+      page: 1,
+      sort: "desc" as const,
+    };
   }, [searchParams]);
   /*
    * functions

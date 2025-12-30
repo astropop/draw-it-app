@@ -1,18 +1,17 @@
 "use client";
 
+import { gameListQuerySchema, SortType } from "@/app/lib/validation";
 import {
-  Stack,
-  Typography,
-  Pagination,
   Box,
   FormControl,
   InputLabel,
-  Select,
   MenuItem,
+  Pagination,
+  Select,
+  SelectChangeEvent,
+  Typography,
 } from "@mui/material";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { gameListQuerySchema, SortType } from "@/app/lib/validation";
 
 export type PaginationControlledProps = {
   count: number;
@@ -26,31 +25,22 @@ export const PaginationControlled = ({
   onPaginationChange,
 }: PaginationControlledProps) => {
   /*
-   * constants
-   */
-
-  /*
    * states
    */
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [page, setPage] = useState(1);
-  const [sort, setSort] = useState<SortType>("desc");
+  /*
+   * constants
+   */
+  const params = Object.fromEntries(searchParams);
+  const parsed = gameListQuerySchema.safeParse(params);
 
+  const page = parsed.success ? parsed.data.page : 1;
+  const sort = parsed.success ? parsed.data.sort : "desc";
   /*
    * hooks
    */
-  // Parse URL params on mount
-  useEffect(() => {
-    const params = Object.fromEntries(searchParams);
-    const parsed = gameListQuerySchema.safeParse(params);
-
-    if (parsed.success) {
-      setPage(parsed.data.page);
-      setSort(parsed.data.sort);
-    }
-  }, [searchParams]);
 
   /*
    * functions
@@ -59,16 +49,12 @@ export const PaginationControlled = ({
     event: React.ChangeEvent<unknown>,
     value: number
   ) => {
-    setPage(value);
     updateUrl(value, sort);
-    onPaginationChange?.(value, sort);
   };
 
-  const handleSortChange = (event: any) => {
+  const handleSortChange = (event: SelectChangeEvent<SortType>) => {
     const newSort = event.target.value as SortType;
-    setSort(newSort);
     updateUrl(page, newSort);
-    onPaginationChange?.(page, newSort);
   };
 
   const updateUrl = (newPage: number, newSort: SortType) => {
@@ -76,6 +62,8 @@ export const PaginationControlled = ({
     params.set("page", newPage.toString());
     params.set("sort", newSort);
     router.push(`?${params.toString()}`);
+
+    onPaginationChange?.(page, newSort);
   };
 
   // Calculate total pages
