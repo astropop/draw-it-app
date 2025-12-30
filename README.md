@@ -15,8 +15,8 @@ Demo:
 ## Table of Contents
 
 - [Required](#required)
-- [Screens List](#screenslist)
-- [APIs List](#apislist)
+- [Screens List](#screens-list)
+- [APIs List](#apis-list)
 
 ## Required
 
