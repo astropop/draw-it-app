@@ -8,15 +8,26 @@ A drawing game where a player draw some masterpices for another guessing
 View online [Link](https://tai.vnpsc.com/drawit).
 
 Demo:
+Screen: Pick a word
 ![Image0](assets/drawing0.png)
-
+Screen: Drawing a masterpiece
 ![Image1](assets/drawing1.png)
+Screen: Spectate a game
+![Image3](assets/drawing3.png)
 
 ## Table of Contents
 
+- [Features](#features)
 - [Required](#required)
 - [Screens List](#screens-list)
 - [APIs List](#apis-list)
+
+## Features
+
+- Do not need account.
+- Play anytime.
+- Use an AI agent to randomize the words.
+- Guests can spectate the game right after it is created.
 
 ## Required
 
